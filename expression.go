@@ -2,7 +2,6 @@ package cassgowary
 
 import (
 	"fmt"
-	"log"
 	"strings"
 
 	"github.com/emirpasic/gods/maps/linkedhashmap"
@@ -14,7 +13,6 @@ type Expression struct {
 }
 
 func NewExpression(constant Float, terms ...*Term) *Expression {
-	log.Print(constant, terms)
 	return &Expression{
 		Constant: constant,
 		Terms:    terms,
@@ -22,7 +20,6 @@ func NewExpression(constant Float, terms ...*Term) *Expression {
 }
 
 func NewExpressionFrom(terms ...*Term) *Expression {
-	log.Printf("%+v", terms)
 	return NewExpression(0, terms...)
 }
 
@@ -166,9 +163,6 @@ func (e *Expression) SubtractFloat(constant Float) *Expression {
 // Expression relations
 func (e *Expression) Equals(other *Expression) *Constraint {
 	e2 := e.Subtract(other)
-	log.Printf("e:%+v", e)
-	log.Printf("other:%+v", other)
-	log.Printf("e2:%+v", e2)
 	return NewConstraintRequired(e2, OP_EQ)
 }
 
@@ -188,7 +182,6 @@ func (e *Expression) EqualsFloat(constant Float) *Constraint {
 
 func (e *Expression) LessThanOrEqualTo(other *Expression) *Constraint {
 	e2 := e.Subtract(other)
-	log.Print(e2)
 	return NewConstraintRequired(e2, OP_LE)
 }
 

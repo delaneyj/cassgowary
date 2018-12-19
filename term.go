@@ -2,7 +2,6 @@ package cassgowary
 
 import (
 	"fmt"
-	"log"
 )
 
 type Term struct {
@@ -93,7 +92,6 @@ func (t *Term) EqualsVariable(v *Variable) *Constraint {
 }
 
 func (t *Term) EqualsFloat(constant Float) *Constraint {
-	log.Print(t)
 	e := NewExpressionFrom(t)
 	c := e.EqualsFloat(constant)
 	return c

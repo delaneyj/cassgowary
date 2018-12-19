@@ -1,8 +1,6 @@
 package cassgowary
 
 import (
-	"log"
-
 	"github.com/emirpasic/gods/maps/linkedhashmap"
 
 	"github.com/pkg/errors"
@@ -59,9 +57,6 @@ func (s *Solver) AddConstraint(c *Constraint) error {
 
 	var t tag
 	r := s.createRow(c, t)
-	cellJSON, _ := r.cells.ToJSON()
-	log.Printf("%+v %+v", r, string(cellJSON))
-	log.Printf("%+v", r.cells.Size())
 	subject := s.chooseSubject(r, t)
 
 	switch {
@@ -479,11 +474,6 @@ func (s *Solver) substitute(sym *symbol, r *row) {
 // until the objective function reaches a minimum.
 func (s *Solver) optimize(objective *row) error {
 	for {
-		log.Printf("%+v %+v", objective, objective.cells.Size())
-		objective.cells.Each(func(k, v interface{}) {
-			log.Printf("cell k:%+v v:%+v", k, v)
-		})
-
 		entering := s.enteringSymbol(objective)
 		if entering.kind == symbolInvalid {
 			return nil
@@ -509,9 +499,7 @@ func (s *Solver) optimize(objective *row) error {
 			}
 		}
 
-		log.Printf("%d", s.rows.Size())
 		s.rows.Remove(entryKey)
-		log.Printf("%d", s.rows.Size())
 		entry.solveForSymbols(leaving, entering)
 		s.substitute(entering, entry)
 		s.rows.Put(entering, entry)
@@ -547,11 +535,6 @@ func (s *Solver) dualOptimize() error {
 // the criteria, it means the objective function is at a minimum, and an
 // invalid symbol is returned.
 func (s *Solver) enteringSymbol(objective *row) *symbol {
-	log.Printf("%+v", objective)
-	objective.cells.Each(func(k, v interface{}) {
-		log.Printf("cell k:%+v v:%+v", k, v)
-	})
-
 	foundSymbolRaw, _ := objective.cells.Find(func(k, v interface{}) bool {
 		symbol := k.(*symbol)
 		value := v.(Float)

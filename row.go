@@ -2,7 +2,6 @@ package cassgowary
 
 import (
 	"fmt"
-	"log"
 	"strings"
 
 	"github.com/emirpasic/gods/maps/linkedhashmap"
@@ -46,10 +45,6 @@ func newRowFrom(other *row) *row {
 		r.cells.Put(k, v)
 	})
 
-	log.Printf("%+v", r)
-	r.cells.Each(func(k, v interface{}) {
-		log.Printf("cell k:%+v v:%+v", k, v)
-	})
 	return r
 }
 
@@ -64,7 +59,6 @@ func (r *row) add(value Float) Float {
 // added to the existing coefficient. If the resulting coefficient
 // is zero, the symbol will be removed from the row
 func (r *row) insertSymbol(s *symbol, coeffecient Float) {
-	log.Printf("%+v", r)
 	coeffecientRaw, exists := r.cells.Get(s)
 	if exists {
 		existingCoefficient := coeffecientRaw.(Float)
@@ -164,11 +158,6 @@ func (r *row) solveForSymbols(lhs, rhs *symbol) {
 // <p/>
 // If the symbol does not exist in the row, zero will be returned.
 func (r *row) coefficientFor(s *symbol) Float {
-	log.Printf("%+v %d", r, r.cells.Size())
-	r.cells.Each(func(k, v interface{}) {
-		log.Printf("cell k:%+v v:%+v", k, v)
-	})
-
 	if v, exists := r.cells.Get(s); exists {
 		f := v.(Float)
 		return f
