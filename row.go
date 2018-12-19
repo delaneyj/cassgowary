@@ -1,7 +1,9 @@
 package cassgowary
 
 import (
+	"fmt"
 	"log"
+	"strings"
 
 	"github.com/emirpasic/gods/maps/linkedhashmap"
 )
@@ -9,6 +11,18 @@ import (
 type row struct {
 	constant Float
 	cells    *linkedhashmap.Map
+}
+
+func (r *row) String() string {
+	info := []string{
+		fmt.Sprintf("constant:%f cells:", r.constant),
+	}
+	r.cells.Each(func(k, v interface{}) {
+		info = append(info,
+			fmt.Sprintf("%s:%f", k, v),
+		)
+	})
+	return strings.Join(info, " ")
 }
 
 func newRow() *row {
@@ -49,9 +63,11 @@ func (r *row) add(value Float) Float {
 // If the symbol already exists in the row, the coefficient will be
 // added to the existing coefficient. If the resulting coefficient
 // is zero, the symbol will be removed from the row
-func (r *row) insertSymbol(s Symbol, coeffecient Float) {
-	if x, exists := r.cells.Get(s); exists {
-		existingCoefficient := x.(Float)
+func (r *row) insertSymbol(s *symbol, coeffecient Float) {
+	log.Printf("%+v", r)
+	coeffecientRaw, exists := r.cells.Get(s)
+	if exists {
+		existingCoefficient := coeffecientRaw.(Float)
 		coeffecient += existingCoefficient
 	}
 
@@ -67,7 +83,7 @@ func (r *row) insertSymbol(s Symbol, coeffecient Float) {
 // If the symbol already exists in the row, the coefficient will be
 // added to the existing coefficient. If the resulting coefficient
 // is zero, the symbol will be removed from the row
-func (r *row) insertSymbolDefault(s Symbol) {
+func (r *row) insertSymbolDefault(s *symbol) {
 	r.insertSymbol(s, 1)
 }
 
@@ -79,7 +95,7 @@ func (r *row) insertRow(other *row, coefficient Float) {
 	r.constant += other.constant * coefficient
 
 	other.cells.Each(func(k, v interface{}) {
-		s := k.(Symbol)
+		s := k.(*symbol)
 		coeff := v.(Float) * coefficient
 
 		var temp Float
@@ -98,7 +114,7 @@ func (r *row) insertFromDefault(other *row) {
 	r.insertRow(other, 1)
 }
 
-func (r *row) remove(s Symbol) {
+func (r *row) remove(s *symbol) {
 	r.cells.Remove(s)
 }
 
@@ -116,16 +132,20 @@ func (r *row) reverseSign() {
 // be removed from the row, and the constant and other cells will
 // be multiplied by the negative inverse of the target coefficient.
 // The given symbol *must* exist in the row.
-func (r *row) solveFor(s Symbol) {
+func (r *row) solveFor(s *symbol) {
 	v, _ := r.cells.Get(s)
 	value := v.(Float)
 	coeff := -1 / value
 	r.cells.Remove(s)
 	r.constant *= coeff
 
+	newCells := linkedhashmap.New()
 	r.cells.Each(func(k, v interface{}) {
-		r.cells.Put(k, v.(Float)*coeff)
+		value := v.(Float)
+		value *= coeff
+		newCells.Put(k, value)
 	})
+	r.cells = newCells
 }
 
 //  Solve the row for the given symbols.
@@ -135,7 +155,7 @@ func (r *row) solveFor(s Symbol) {
 //  negative inverse of the rhs coefficient.
 //  The lhs symbol *must not* exist in the row, and the rhs symbol
 //  must* exist in the row.
-func (r *row) solveForSymbols(lhs, rhs Symbol) {
+func (r *row) solveForSymbols(lhs, rhs *symbol) {
 	r.insertSymbol(lhs, -1.0)
 	r.solveFor(rhs)
 }
@@ -143,7 +163,7 @@ func (r *row) solveForSymbols(lhs, rhs Symbol) {
 // Get the coefficient for the given symbol.
 // <p/>
 // If the symbol does not exist in the row, zero will be returned.
-func (r *row) coefficientFor(s Symbol) Float {
+func (r *row) coefficientFor(s *symbol) Float {
 	log.Printf("%+v %d", r, r.cells.Size())
 	r.cells.Each(func(k, v interface{}) {
 		log.Printf("cell k:%+v v:%+v", k, v)
@@ -162,7 +182,7 @@ func (r *row) coefficientFor(s Symbol) Float {
 // form x = 3 * y + c the row will be updated to reflect the
 // expression 3 * a * y + a * c + b.
 // If the symbol does not exist in the row, this is a no-op.
-func (r *row) substitute(s Symbol, other *row) {
+func (r *row) substitute(s *symbol, other *row) {
 	if c, exists := r.cells.Get(s); exists {
 		coefficient := c.(Float)
 		r.cells.Remove(s)
@@ -173,6 +193,7 @@ func (r *row) substitute(s Symbol, other *row) {
 // Test whether a row is composed of all dummy variables.
 func (r *row) allDummies() bool {
 	return r.cells.All(func(k, v interface{}) bool {
-		return k.(Symbol) == SymbolDummy
+		s := k.(*symbol)
+		return s != nil && s.kind == symbolDummy
 	})
 }

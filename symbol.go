@@ -1,13 +1,35 @@
 package cassgowary
 
-type Symbol int
+type symbols []*symbol
 
-type Symbols []Symbol
+type symbolType int
+
+var nextSymbolID = 0
 
 const (
-	SymbolInvalid Symbol = iota
-	SymbolExternal
-	SymbolSlack
-	SymbolError
-	SymbolDummy
+	symbolInvalid symbolType = iota
+	symbolExternal
+	symbolSlack
+	symbolError
+	symbolDummy
 )
+
+type symbol struct {
+	id   int
+	kind symbolType
+}
+
+func newSymbol() *symbol {
+	s := &symbol{
+		id:   nextSymbolID,
+		kind: symbolInvalid,
+	}
+	nextSymbolID++
+	return s
+}
+
+func newSymbolFrom(t symbolType) *symbol {
+	s := newSymbol()
+	s.kind = t
+	return s
+}

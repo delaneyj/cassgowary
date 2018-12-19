@@ -9,7 +9,7 @@ import (
 )
 
 type tag struct {
-	marker, other Symbol
+	marker, other *symbol
 }
 
 type editInfo struct {
@@ -31,7 +31,7 @@ type Solver struct {
 	rows                  *linkedhashmap.Map //[Symbol]*row
 	vars                  *linkedhashmap.Map //[*Variable]Symbol
 	edits                 *linkedhashmap.Map //[*Variable]editInfo
-	infeasibleRows        Symbols
+	infeasibleRows        symbols
 	objective, artificial *row
 }
 
@@ -41,7 +41,7 @@ func NewSolver() *Solver {
 		rows:           linkedhashmap.New(),
 		vars:           linkedhashmap.New(),
 		edits:          linkedhashmap.New(),
-		infeasibleRows: Symbols{},
+		infeasibleRows: symbols{},
 		objective:      newRow(),
 		artificial:     nil,
 	}
@@ -65,15 +65,15 @@ func (s *Solver) AddConstraint(c *Constraint) error {
 	subject := s.chooseSubject(r, t)
 
 	switch {
-	case subject == SymbolInvalid && r.allDummies():
+	case subject.kind == symbolInvalid && r.allDummies():
 		if r.constant.NearZero() {
 			return UnsatisfiableConstraintErr(c)
 		} else {
 			subject = t.marker
 		}
 
-	case subject == SymbolInvalid:
-		if !s.addWithArtificialVariable(r) {
+	case subject.kind == symbolInvalid:
+		if added, err := s.addWithArtificialVariable(r); !added || err != nil {
 			return UnsatisfiableConstraintErr(c)
 		}
 
@@ -111,14 +111,14 @@ func (s *Solver) removeConstraint(c *Constraint) error {
 		//Symbol leaving = tag.marker;
 		//rows.remove(tag.marker);
 
-		leaving := SymbolInvalid
+		leaving := newSymbol()
 		if fs, _ := s.rows.Find(func(k, v interface{}) bool {
 			return r == v
 		}); fs != nil {
-			leaving = fs.(Symbol)
+			leaving = fs.(*symbol)
 		}
 
-		if leaving == SymbolInvalid {
+		if leaving != nil && leaving.kind == symbolInvalid {
 			return InternalSolverErr
 		}
 
@@ -131,14 +131,14 @@ func (s *Solver) removeConstraint(c *Constraint) error {
 }
 
 func (s *Solver) removeConstraintEffects(c *Constraint, t tag) {
-	if t.marker == SymbolError {
+	if t.marker != nil && t.marker.kind == symbolError {
 		s.removeMarkerEffects(t.marker, c.Strength.Float())
-	} else if t.other == SymbolError {
+	} else if t.other != nil && t.other.kind == symbolError {
 		s.removeMarkerEffects(t.other, c.Strength.Float())
 	}
 }
 
-func (s *Solver) removeMarkerEffects(marker Symbol, strength Float) {
+func (s *Solver) removeMarkerEffects(marker *symbol, strength Float) {
 	if r, exists := s.rows.Get(marker); exists {
 		s.objective.insertRow(r.(*row), -strength)
 	} else {
@@ -146,12 +146,12 @@ func (s *Solver) removeMarkerEffects(marker Symbol, strength Float) {
 	}
 }
 
-func (s *Solver) markerLeavingRow(marker Symbol) *row {
+func (s *Solver) markerLeavingRow(marker *symbol) *row {
 	r1, r2 := FloatMax, FloatMax
 	var first, second, third *row
 
 	s.rows.Each(func(k, v interface{}) {
-		symbol := k.(Symbol)
+		symbol := k.(*symbol)
 		candidate := v.(*row)
 
 		c := candidate.coefficientFor(marker)
@@ -159,7 +159,7 @@ func (s *Solver) markerLeavingRow(marker Symbol) *row {
 			return
 		}
 
-		if symbol == SymbolExternal {
+		if symbol.kind == symbolExternal {
 			third = candidate
 		} else if c < 0 {
 			r := -candidate.constant / c
@@ -270,17 +270,17 @@ func (s *Solver) SuggestValue(v Variable, value Float) error {
 				edit.tag.other,
 			)
 		}
-		s.dualOptimize()
-		return nil
+		return s.dualOptimize()
 	}
 
 	s.rows.Each(func(k, v interface{}) {
-		symbol := k.(Symbol)
+		symbol := k.(*symbol)
 		r := v.(*row)
 		coefficient := r.coefficientFor(edit.tag.marker)
 		if coefficient != 0.0 &&
 			r.add(delta*coefficient) < 0.0 &&
-			symbol == SymbolExternal {
+			symbol != nil &&
+			symbol.kind == symbolExternal {
 			s.infeasibleRows = append(
 				s.infeasibleRows,
 				symbol,
@@ -294,8 +294,7 @@ func (s *Solver) SuggestValue(v Variable, value Float) error {
 func (s *Solver) UpdateVariables() {
 	s.vars.Each(func(k, v interface{}) {
 		variable := k.(*Variable)
-		symbol := v.(Symbol)
-		log.Print(variable, symbol)
+		symbol := v.(*symbol)
 
 		if r, exists := s.rows.Get(symbol); exists {
 			c := r.(*row).constant
@@ -340,25 +339,30 @@ func (s *Solver) createRow(c *Constraint, tag tag) *row {
 		if c.Op == OP_LE {
 			coeff = 1
 		}
-		tag.marker = SymbolSlack
-		r.insertSymbol(SymbolSlack, coeff)
+		slack := newSymbolFrom(symbolSlack)
+		tag.marker = slack
+		r.insertSymbol(tag.marker, coeff)
 		if c.Strength < Required {
-			tag.other = SymbolError
-			r.insertSymbol(SymbolError, -coeff)
-			s.objective.insertSymbol(SymbolError, c.Strength.Float())
+			serror := newSymbolFrom(symbolError)
+			tag.other = serror
+			r.insertSymbol(serror, -coeff)
+			s.objective.insertSymbol(serror, c.Strength.Float())
 		}
 
 	case OP_EQ:
 		if c.Strength < Required {
-			tag.marker = SymbolError
-			tag.other = SymbolError
-			r.insertSymbol(SymbolError, -1) // v = eplus - eminus
-			r.insertSymbol(SymbolError, 1)  // v - eplus + eminus = 0
-			s.objective.insertSymbol(SymbolError, c.Strength.Float())
-			s.objective.insertSymbol(SymbolError, c.Strength.Float())
+			errPlus := newSymbolFrom(symbolError)
+			errMinus := newSymbolFrom(symbolError)
+			tag.marker = errPlus
+			tag.other = errMinus
+			r.insertSymbol(errPlus, -1) // v = eplus - eminus
+			r.insertSymbol(errMinus, 1) // v - eplus + eminus = 0
+			s.objective.insertSymbol(errPlus, c.Strength.Float())
+			s.objective.insertSymbol(errMinus, c.Strength.Float())
 		} else {
-			tag.marker = SymbolDummy
-			r.insertSymbol(SymbolDummy, 1)
+			dummy := newSymbolFrom(symbolDummy)
+			tag.marker = dummy
+			r.insertSymbol(dummy, 1)
 		}
 	}
 
@@ -378,37 +382,42 @@ func (s *Solver) createRow(c *Constraint, tag tag) *row {
 // 1) The first symbol representing an external variable.
 // 2) A negative slack or error tag variable.
 // If a subject cannot be found, an invalid symbol will be returned.
-func (s *Solver) chooseSubject(r *row, t tag) Symbol {
+func (s *Solver) chooseSubject(r *row, t tag) *symbol {
 	if fk, _ := r.cells.Find(func(k, v interface{}) bool {
-		return k.(Symbol) == SymbolExternal
+		return k.(*symbol).kind == symbolExternal
 	}); fk != nil {
-		return fk.(Symbol)
+		return fk.(*symbol)
 	}
 
-	if t.marker == SymbolSlack || t.marker == SymbolError {
+	if t.marker != nil && (t.marker.kind == symbolSlack || t.marker.kind == symbolError) {
 		if r.coefficientFor(t.marker) < 0.0 {
 			return t.marker
 		}
 	}
-	if t.other == SymbolSlack || t.other == SymbolError {
+
+	if t.other != nil && (t.other.kind == symbolSlack || t.other.kind == symbolError) {
 		if r.coefficientFor(t.other) < 0.0 {
 			return t.other
 		}
 	}
-	return SymbolInvalid
+
+	return newSymbol()
 }
 
 // Add the row to the tableau using an artificial variable.
 // This will return false if the constraint cannot be satisfied.
-func (s *Solver) addWithArtificialVariable(r *row) bool {
+func (s *Solver) addWithArtificialVariable(r *row) (bool, error) {
 	// Create and add the artificial variable to the tableau
-	art := SymbolSlack
+	art := newSymbolFrom(symbolSlack)
 	s.rows.Put(art, newRowFrom(r))
 	s.artificial = newRowFrom(r)
 
 	// Optimize the artificial objective. This is successful
 	// only if the artificial objective is optimized to zero.
-	s.optimize(s.artificial)
+	if err := s.optimize(s.artificial); err != nil {
+		return false, errors.Wrap(err, "can't optimize")
+	}
+
 	success := s.artificial.constant.NearZero()
 	s.artificial = nil
 
@@ -423,12 +432,12 @@ func (s *Solver) addWithArtificialVariable(r *row) bool {
 		})
 
 		if rowptr.cells.Size() == 0 {
-			return success
+			return success, nil
 		}
 
 		entering := s.anyPivotableSymbol(rowptr)
-		if entering == SymbolInvalid {
-			return false // unsatisfiable (will this ever happen?)
+		if entering.kind == symbolInvalid {
+			return false, nil // unsatisfiable (will this ever happen?)
 		}
 		rowptr.solveForSymbols(art, entering)
 		s.substitute(entering, rowptr)
@@ -441,27 +450,27 @@ func (s *Solver) addWithArtificialVariable(r *row) bool {
 	})
 
 	s.objective.cells.Remove(art)
-	return success
+	return success, nil
 }
 
 // Substitute the parametric symbol with the given row.
 // This method will substitute all instances of the parametric symbol
 // in the tableau and the objective function with the given row.
-func (s *Solver) substitute(symbol Symbol, r *row) {
+func (s *Solver) substitute(sym *symbol, r *row) {
 	s.rows.Each(func(k, v interface{}) {
-		symbol := k.(Symbol)
+		ss := k.(*symbol)
 		row := v.(*row)
-		row.substitute(symbol, r)
+		row.substitute(sym, r)
 
-		if symbol != SymbolExternal && row.constant < 0 {
-			s.infeasibleRows = append(s.infeasibleRows, symbol)
+		if ss.kind != symbolExternal && row.constant < 0 {
+			s.infeasibleRows = append(s.infeasibleRows, ss)
 		}
 	})
 
-	s.objective.substitute(symbol, r)
+	s.objective.substitute(sym, r)
 
 	if s.artificial != nil {
-		s.artificial.substitute(symbol, r)
+		s.artificial.substitute(sym, r)
 	}
 }
 
@@ -474,8 +483,9 @@ func (s *Solver) optimize(objective *row) error {
 		objective.cells.Each(func(k, v interface{}) {
 			log.Printf("cell k:%+v v:%+v", k, v)
 		})
+
 		entering := s.enteringSymbol(objective)
-		if entering == SymbolInvalid {
+		if entering.kind == symbolInvalid {
 			return nil
 		}
 
@@ -484,21 +494,24 @@ func (s *Solver) optimize(objective *row) error {
 			return errors.New("The objective is unbounded.")
 		}
 
-		leaving := SymbolInvalid
-		if fs, _ := s.rows.Find(func(k, v interface{}) bool {
-			return v.(*row) == entry
-		}); fs != nil {
-			leaving = fs.(Symbol)
+		var leaving, entryKey *symbol
+		{
+			if fs, _ := s.rows.Find(func(k, v interface{}) bool {
+				return v.(*row) == entry
+			}); fs != nil {
+				leaving = fs.(*symbol)
+			}
+
+			if fs, _ := s.rows.Find(func(k, v interface{}) bool {
+				return v.(*row) == entry
+			}); fs != nil {
+				entryKey = fs.(*symbol)
+			}
 		}
 
-		entryKey := SymbolInvalid
-		if fs, _ := s.rows.Find(func(k, v interface{}) bool {
-			return v.(*row) == entry
-		}); fs != nil {
-			entryKey = fs.(Symbol)
-		}
-
+		log.Printf("%d", s.rows.Size())
 		s.rows.Remove(entryKey)
+		log.Printf("%d", s.rows.Size())
 		entry.solveForSymbols(leaving, entering)
 		s.substitute(entering, entry)
 		s.rows.Put(entering, entry)
@@ -515,7 +528,7 @@ func (s *Solver) dualOptimize() error {
 			r := x.(*row)
 			if r.constant < 0 {
 				entering := s.dualEnteringSymbol(r)
-				if entering == SymbolInvalid {
+				if entering.kind == symbolInvalid {
 					return InternalSolverErr
 				}
 				s.rows.Remove(leaving)
@@ -533,56 +546,58 @@ func (s *Solver) dualOptimize() error {
 // is non-dummy and has a coefficient less than zero. If no symbol meets
 // the criteria, it means the objective function is at a minimum, and an
 // invalid symbol is returned.
-func (s *Solver) enteringSymbol(objective *row) Symbol {
+func (s *Solver) enteringSymbol(objective *row) *symbol {
 	log.Printf("%+v", objective)
 	objective.cells.Each(func(k, v interface{}) {
 		log.Printf("cell k:%+v v:%+v", k, v)
 	})
 
 	foundSymbolRaw, _ := objective.cells.Find(func(k, v interface{}) bool {
-		symbol := k.(Symbol)
+		symbol := k.(*symbol)
 		value := v.(Float)
 
-		if symbol != SymbolDummy && value < 0 {
+		if symbol.kind != symbolDummy && value < 0 {
 			return true
 		}
 		return false
 	})
 	if foundSymbolRaw != nil {
-		return foundSymbolRaw.(Symbol)
+		return foundSymbolRaw.(*symbol)
 	}
-	return SymbolInvalid
+
+	return newSymbol()
 }
 
-func (s *Solver) dualEnteringSymbol(r *row) Symbol {
-	entering, ratio := SymbolInvalid, FloatMax
+func (s *Solver) dualEnteringSymbol(r *row) *symbol {
+	entering, ratio := newSymbol(), FloatMax
 	r.cells.Each(func(k, v interface{}) {
-		symbol := k.(Symbol)
-		if symbol != SymbolDummy {
-			x, _ := r.cells.Get(symbol)
+		if sym := k.(*symbol); sym.kind != symbolDummy {
+			x, _ := r.cells.Get(sym)
 			currentCell := x.(Float)
 			if currentCell > 0.0 {
-				coefficient := s.objective.coefficientFor(symbol)
+				coefficient := s.objective.coefficientFor(sym)
 				r := coefficient / currentCell
 				if r < ratio {
 					ratio = r
-					entering = symbol
+					entering = sym
 				}
 			}
 		}
 	})
+
 	return entering
 }
 
 // Get the first Slack or Error symbol in the row.
 // If no such symbol is present, and Invalid symbol will be returned.
-func (s *Solver) anyPivotableSymbol(r *row) Symbol {
+func (s *Solver) anyPivotableSymbol(r *row) *symbol {
 	if fs, _ := r.cells.Find(func(k, v interface{}) bool {
-		return k.(Symbol) == SymbolSlack || k.(Symbol) == SymbolError
+		sym := k.(*symbol)
+		return sym.kind == symbolSlack || sym.kind == symbolError
 	}); fs != nil {
-		return fs.(Symbol)
+		return fs.(*symbol)
 	}
-	return SymbolInvalid
+	return newSymbol()
 }
 
 // Compute the row which holds the exit symbol for a pivot.
@@ -591,18 +606,16 @@ func (s *Solver) anyPivotableSymbol(r *row) Symbol {
 // which holds the exit symbol. If no appropriate exit symbol is
 // found, the end() iterator will be returned. This indicates that
 // the objective function is unbounded.
-func (s *Solver) leavingRow(entering Symbol) *row {
+func (s *Solver) leavingRow(entering *symbol) *row {
 	ratio := FloatMax
 	var r *row
 
-	i := 0
 	s.rows.Each(func(k, v interface{}) {
-		symbol := k.(Symbol)
+		sym := k.(*symbol)
 
-		if symbol != SymbolExternal {
+		if sym.kind != symbolExternal {
 			candidate := v.(*row)
 
-			log.Printf("%d %+v %d", i, candidate, candidate.cells.Size())
 			t := candidate.coefficientFor(entering)
 			if t < 0 {
 				if tr := -candidate.constant / t; tr < ratio {
@@ -617,12 +630,12 @@ func (s *Solver) leavingRow(entering Symbol) *row {
 
 // Get the symbol for the given variable.
 // If a symbol does not exist for the variable, one will be created.
-func (s *Solver) varSymbol(v *Variable) Symbol {
+func (s *Solver) varSymbol(v *Variable) *symbol {
 	if x, exists := s.vars.Get(v); exists {
-		return x.(Symbol)
+		return x.(*symbol)
 	}
 
-	symbol := SymbolExternal
+	symbol := newSymbolFrom(symbolExternal)
 	s.vars.Put(v, symbol)
 	return symbol
 }
