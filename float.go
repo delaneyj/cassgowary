@@ -7,7 +7,7 @@ import (
 const (
 	FloatMin     = Float(-math.MaxFloat64)
 	FloatMax     = Float(math.MaxFloat64)
-	FloatEpsilon = 7/3.0 - 4/3.0 - 1
+	FloatEpsilon = 1.0e-8
 )
 
 type Float float64
@@ -69,7 +69,7 @@ func (f Float) GreaterThanOrEqualToTerm(t *Term) *Constraint {
 
 func (f Float) GreaterThanOrEqualToVariable(v *Variable) *Constraint {
 	t := NewTermFrom(v)
-	c := t.GreaterThanOrEqualToFloat(f)
+	c := f.GreaterThanOrEqualToTerm(t)
 	return c
 }
 

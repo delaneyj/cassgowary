@@ -79,7 +79,9 @@ func (v *Variable) EqualsTerm(t Term) *Constraint {
 }
 
 func (v *Variable) Equals(other *Variable) *Constraint {
-	return NewTermFrom(v).EqualsVariable(other)
+	t := NewTermFrom(v)
+	c := t.EqualsVariable(other)
+	return c
 }
 
 func (v *Variable) EqualsFloat(constant Float) *Constraint {
@@ -89,23 +91,33 @@ func (v *Variable) EqualsFloat(constant Float) *Constraint {
 }
 
 func (v *Variable) LessThanOrEqualToExpression(e *Expression) *Constraint {
-	return NewTermFrom(v).LessThanOrEqualToExpression(e)
+	t := NewTermFrom(v)
+	c := t.LessThanOrEqualToExpression(e)
+	return c
 }
 
 func (v *Variable) LessThanOrEqualToTerm(t *Term) *Constraint {
-	return NewTermFrom(v).LessThanOrEqualTo(t)
+	t2 := NewTermFrom(v)
+	c := t2.LessThanOrEqualTo(t)
+	return c
 }
 
 func (v *Variable) LessThanOrEqualTo(other *Variable) *Constraint {
-	return NewTermFrom(v).LessThanOrEqualToVariable(other)
+	t := NewTermFrom(v)
+	c := t.LessThanOrEqualToVariable(other)
+	return c
 }
 
 func (v *Variable) LessThanOrEqualToFloat(constant Float) *Constraint {
-	return NewTermFrom(v).LessThanOrEqualToFloat(constant)
+	t := NewTermFrom(v)
+	c := t.LessThanOrEqualToFloat(constant)
+	return c
 }
 
 func (v *Variable) GreaterThanOrEqualToExpression(e *Expression) *Constraint {
-	return NewTermFrom(v).GreaterThanOrEqualToExpression(e)
+	t := NewTermFrom(v)
+	c := t.GreaterThanOrEqualToExpression(e)
+	return c
 }
 
 func (v *Variable) GreaterThanOrEqualToTerm(t Term) *Constraint {
@@ -113,9 +125,13 @@ func (v *Variable) GreaterThanOrEqualToTerm(t Term) *Constraint {
 }
 
 func (v *Variable) GreaterThanOrEqualTo(other *Variable) *Constraint {
-	return NewTermFrom(v).GreaterThanOrEqualToVariable(other)
+	t := NewTermFrom(v)
+	c := t.GreaterThanOrEqualToVariable(other)
+	return c
 }
 
 func (v *Variable) GreaterThanOrEqualToFloat(constant Float) *Constraint {
-	return NewTermFrom(v).GreaterThanOrEqualToFloat(constant)
+	t := NewTermFrom(v)
+	c := t.GreaterThanOrEqualToFloat(constant)
+	return c
 }

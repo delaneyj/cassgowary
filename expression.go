@@ -83,7 +83,7 @@ func (e *Expression) String() string {
 }
 
 // Expression multiply, divide, and unary invert
-func (e *Expression) Multiply(coefficient Float) *Expression {
+func (e *Expression) MultiplyFloat(coefficient Float) *Expression {
 	terms := make(Terms, len(e.Terms))
 	for i, t := range e.Terms {
 		terms[i] = t.Multiply(coefficient)
@@ -91,22 +91,22 @@ func (e *Expression) Multiply(coefficient Float) *Expression {
 	return NewExpression(e.Constant*coefficient, terms...)
 }
 
-func (e *Expression) MultiplyExpression(other Expression) (*Expression, error) {
+func (e *Expression) Multiply(other *Expression) (*Expression, error) {
 	switch {
 	case e.IsConstant():
-		return other.Multiply(e.Constant), nil
+		return other.MultiplyFloat(e.Constant), nil
 	case other.IsConstant():
-		return other.Multiply(other.Constant), nil
+		return other.MultiplyFloat(other.Constant), nil
 	default:
 		return nil, NonLinearExpressionErr
 	}
 }
 
 func (e *Expression) DivideFloat(denominator Float) *Expression {
-	return e.Multiply(1 / denominator)
+	return e.MultiplyFloat(1 / denominator)
 }
 
-func (e *Expression) Divide(other Expression) (*Expression, error) {
+func (e *Expression) Divide(other *Expression) (*Expression, error) {
 	if other.IsConstant() {
 		return e.DivideFloat(other.Constant), nil
 	}
@@ -114,7 +114,7 @@ func (e *Expression) Divide(other Expression) (*Expression, error) {
 }
 
 func (e *Expression) Negate() *Expression {
-	return e.Multiply(-1)
+	return e.MultiplyFloat(-1)
 }
 
 func (e *Expression) Add(other *Expression) *Expression {

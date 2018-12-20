@@ -84,7 +84,7 @@ func (s *Solver) AddConstraint(c *Constraint) error {
 	return nil
 }
 
-func (s *Solver) removeConstraint(c *Constraint) error {
+func (s *Solver) RemoveConstraint(c *Constraint) error {
 	t, exists := s.cns.Get(c)
 	if !exists {
 		return UnknownConstraintErr(c)
@@ -221,7 +221,7 @@ func (s *Solver) RemoveEditVariable(v *Variable) error {
 		return UnknownEditVariableErr
 	}
 
-	if err := s.removeConstraint(edit.constraint); err != nil {
+	if err := s.RemoveConstraint(edit.constraint); err != nil {
 		return UnknownConstraintErr(edit.constraint)
 	}
 

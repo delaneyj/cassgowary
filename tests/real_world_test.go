@@ -1,106 +1,107 @@
 package tests
 
-// public class RealWorldTests {
-// private static double EPSILON = 1.0e-2;
-//     public static final String LEFT = "left";
-//     public static final String RIGHT = "right";
-//     public static final String TOP = "top";
-//     public static final String BOTTOM = "bottom";
-//     public static final String HEIGHT = "height";
-//     public static final String WIDTH = "width";
-//     public static final String CENTERX = "centerX";
-//     public static final String CENTERY = "centerY";
+// . "github.com/delaneyj/cassgowary"
 
-//     private static final String[] CONSTRAINTS = {
+const (
+	LEFT    = "left"
+	RIGHT   = "right"
+	TOP     = "top"
+	BOTTOM  = "bottom"
+	HEIGHT  = "height"
+	WIDTH   = "width"
+	CENTERX = "centerX"
+	CENTERY = "centerY"
+)
 
-//             "container.columnWidth == container.width * 0.4",
-//             "container.thumbHeight == container.columnWidth / 2",
-//             "container.padding == container.width * (0.2 / 3)",
-//             "container.leftPadding == container.padding",
-//             "container.rightPadding == container.width - container.padding",
-//             "container.paddingUnderThumb == 5",
-//             "container.rowPadding == 15",
-//             "container.buttonPadding == 20",
+var constraints = []string{
+	"container.columnWidth == container.width * 0.4",
+	"container.thumbHeight == container.columnWidth / 2",
+	"container.padding == container.width * (0.2 / 3)",
+	"container.leftPadding == container.padding",
+	"container.rightPadding == container.width - container.padding",
+	"container.paddingUnderThumb == 5",
+	"container.rowPadding == 15",
+	"container.buttonPadding == 20",
 
-//             "thumb0.left == container.leftPadding",
-//             "thumb0.top == container.padding",
-//             "thumb0.height == container.thumbHeight",
-//             "thumb0.width == container.columnWidth",
+	"thumb0.left == container.leftPadding",
+	"thumb0.top == container.padding",
+	"thumb0.height == container.thumbHeight",
+	"thumb0.width == container.columnWidth",
 
-//             "title0.left == container.leftPadding",
-//             "title0.top == thumb0.bottom + container.paddingUnderThumb",
-//             "title0.height == title0.intrinsicHeight",
-//             "title0.width == container.columnWidth",
+	"title0.left == container.leftPadding",
+	"title0.top == thumb0.bottom + container.paddingUnderThumb",
+	"title0.height == title0.intrinsicHeight",
+	"title0.width == container.columnWidth",
 
-//             "thumb1.right == container.rightPadding",
-//             "thumb1.top == container.padding",
-//             "thumb1.height == container.thumbHeight",
-//             "thumb1.width == container.columnWidth",
+	"thumb1.right == container.rightPadding",
+	"thumb1.top == container.padding",
+	"thumb1.height == container.thumbHeight",
+	"thumb1.width == container.columnWidth",
 
-//             "title1.right == container.rightPadding",
-//             "title1.top == thumb0.bottom + container.paddingUnderThumb",
-//             "title1.height == title1.intrinsicHeight",
-//             "title1.width == container.columnWidth",
+	"title1.right == container.rightPadding",
+	"title1.top == thumb0.bottom + container.paddingUnderThumb",
+	"title1.height == title1.intrinsicHeight",
+	"title1.width == container.columnWidth",
 
-//             "thumb2.left == container.leftPadding",
-//             "thumb2.top >= title0.bottom + container.rowPadding",
-//             "thumb2.top == title0.bottom + container.rowPadding !weak",
-//             "thumb2.top >= title1.bottom + container.rowPadding",
-//             "thumb2.top == title1.bottom + container.rowPadding !weak",
-//             "thumb2.height == container.thumbHeight",
-//             "thumb2.width == container.columnWidth",
+	"thumb2.left == container.leftPadding",
+	"thumb2.top >= title0.bottom + container.rowPadding",
+	"thumb2.top == title0.bottom + container.rowPadding !weak",
+	"thumb2.top >= title1.bottom + container.rowPadding",
+	"thumb2.top == title1.bottom + container.rowPadding !weak",
+	"thumb2.height == container.thumbHeight",
+	"thumb2.width == container.columnWidth",
 
-//             "title2.left == container.leftPadding",
-//             "title2.top == thumb2.bottom + container.paddingUnderThumb",
-//             "title2.height == title2.intrinsicHeight",
-//             "title2.width == container.columnWidth",
+	"title2.left == container.leftPadding",
+	"title2.top == thumb2.bottom + container.paddingUnderThumb",
+	"title2.height == title2.intrinsicHeight",
+	"title2.width == container.columnWidth",
 
-//             "thumb3.right == container.rightPadding",
-//             "thumb3.top == thumb2.top",
+	"thumb3.right == container.rightPadding",
+	"thumb3.top == thumb2.top",
 
-//             "thumb3.height == container.thumbHeight",
-//             "thumb3.width == container.columnWidth",
+	"thumb3.height == container.thumbHeight",
+	"thumb3.width == container.columnWidth",
 
-//             "title3.right == container.rightPadding",
-//             "title3.top == thumb3.bottom + container.paddingUnderThumb",
-//             "title3.height == title3.intrinsicHeight",
-//             "title3.width == container.columnWidth",
+	"title3.right == container.rightPadding",
+	"title3.top == thumb3.bottom + container.paddingUnderThumb",
+	"title3.height == title3.intrinsicHeight",
+	"title3.width == container.columnWidth",
 
-//             "thumb4.left == container.leftPadding",
-//             "thumb4.top >= title2.bottom + container.rowPadding",
-//             "thumb4.top >= title3.bottom + container.rowPadding",
-//             "thumb4.top == title2.bottom + container.rowPadding !weak",
-//             "thumb4.top == title3.bottom + container.rowPadding !weak",
-//             "thumb4.height == container.thumbHeight",
-//             "thumb4.width == container.columnWidth",
+	"thumb4.left == container.leftPadding",
+	"thumb4.top >= title2.bottom + container.rowPadding",
+	"thumb4.top >= title3.bottom + container.rowPadding",
+	"thumb4.top == title2.bottom + container.rowPadding !weak",
+	"thumb4.top == title3.bottom + container.rowPadding !weak",
+	"thumb4.height == container.thumbHeight",
+	"thumb4.width == container.columnWidth",
 
-//             "title4.left == container.leftPadding",
-//             "title4.top == thumb4.bottom + container.paddingUnderThumb",
-//             "title4.height == title4.intrinsicHeight",
-//             "title4.width == container.columnWidth",
+	"title4.left == container.leftPadding",
+	"title4.top == thumb4.bottom + container.paddingUnderThumb",
+	"title4.height == title4.intrinsicHeight",
+	"title4.width == container.columnWidth",
 
-//             "thumb5.right == container.rightPadding",
-//             "thumb5.top == thumb4.top",
-//             "thumb5.height == container.thumbHeight",
-//             "thumb5.width == container.columnWidth",
+	"thumb5.right == container.rightPadding",
+	"thumb5.top == thumb4.top",
+	"thumb5.height == container.thumbHeight",
+	"thumb5.width == container.columnWidth",
 
-//             "title5.right == container.rightPadding",
-//             "title5.top == thumb5.bottom + container.paddingUnderThumb",
-//             "title5.height == title5.intrinsicHeight",
-//             "title5.width == container.columnWidth",
+	"title5.right == container.rightPadding",
+	"title5.top == thumb5.bottom + container.paddingUnderThumb",
+	"title5.height == title5.intrinsicHeight",
+	"title5.width == container.columnWidth",
 
-//             "line.height == 1",
-//             "line.width == container.width",
-//             "line.top >= title4.bottom + container.rowPadding",
-//             "line.top >= title5.bottom + container.rowPadding",
+	"line.height == 1",
+	"line.width == container.width",
+	"line.top >= title4.bottom + container.rowPadding",
+	"line.top >= title5.bottom + container.rowPadding",
 
-//             "more.top == line.bottom + container.buttonPadding",
-//             "more.height == more.intrinsicHeight",
-//             "more.left == container.leftPadding",
-//             "more.right == container.rightPadding",
+	"more.top == line.bottom + container.buttonPadding",
+	"more.height == more.intrinsicHeight",
+	"more.left == container.leftPadding",
+	"more.right == container.rightPadding",
 
-//             "container.height == more.bottom + container.buttonPadding"
-//     };
+	"container.height == more.bottom + container.buttonPadding",
+}
 
 //     public ConstraintParser.CassowaryVariableResolver createVariableResolver(final Solver solver, final HashMap<String, HashMap<String, Variable>> nodeHashMap) {
 //         ConstraintParser.CassowaryVariableResolver variableResolver = new ConstraintParser.CassowaryVariableResolver() {
@@ -172,12 +173,6 @@ package tests
 //             }
 //         };
 //         return variableResolver;
-//     }
-
-//     @Test
-//     public void testSimple() {
-//         int a = 20;
-//         assertEquals(20, a);
 //     }
 
 //     @Test
@@ -318,5 +313,3 @@ package tests
 //             System.out.println(" " + pairs.getKey() + " = " + pairs.getValue().getValue() + " (address:" + pairs.getValue().hashCode() + ")");
 //         }
 //     }
-
-// }

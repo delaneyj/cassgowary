@@ -1,51 +1,50 @@
 package tests
 
-// public class VariableExpression {
-//     private static double EPSILON = 1.0e-8;
+import (
+	"testing"
 
-//     @Test
-//     public void lessThanEqualTo() throws DuplicateConstraintException, UnsatisfiableConstraintException {
-//         Variable x = new Variable("x");
-//         Solver solver = new Solver();
-//         solver.addConstraint(Symbolics.lessThanOrEqualTo(x, new Expression(100)));
-//         solver.updateVariables();
-//         assertTrue(x.getValue() <= 100);
-//         solver.addConstraint(Symbolics.equals(x, 90));
-//         solver.updateVariables();
-//         assertEquals(x.getValue(), 90, EPSILON);
-//     }
+	. "github.com/delaneyj/cassgowary"
+	"github.com/stretchr/testify/assert"
+)
 
-//     @Test(expected = UnsatisfiableConstraintException.class)
-//     public void lessThanEqualToUnsatisfiable() throws DuplicateConstraintException, UnsatisfiableConstraintException {
-//         Variable x = new Variable("x");
-//         Solver solver = new Solver();
-//         solver.addConstraint(Symbolics.lessThanOrEqualTo(x, new Expression(100)));
-//         solver.updateVariables();
-//         assertTrue(x.getValue() <= 100);
-//         solver.addConstraint(Symbolics.equals(x, 110));
-//         solver.updateVariables();
-//     }
+func TestVariableExpressionLessThanEqualTo(t *testing.T) {
+	x := NewVariable("x")
+	solver := NewSolver()
+	solver.AddConstraint(x.LessThanOrEqualToExpression(NewExpression(100)))
+	solver.UpdateVariables()
+	assert.True(t, x.Value <= 100)
+	solver.AddConstraint(x.EqualsFloat(90))
+	solver.UpdateVariables()
+	assert.InDelta(t, x.Value.Raw(), 90, FloatEpsilon)
+}
 
-//     @Test
-//     public void greaterThanEqualTo() throws DuplicateConstraintException, UnsatisfiableConstraintException {
-//         Variable x = new Variable("x");
-//         Solver solver = new Solver();
-//         solver.addConstraint(Symbolics.greaterThanOrEqualTo(x, new Expression(100)));
-//         solver.updateVariables();
-//         assertTrue(x.getValue() >= 100);
-//         solver.addConstraint(Symbolics.equals(x, 110));
-//         solver.updateVariables();
-//         assertEquals(x.getValue(), 110, EPSILON);
-//     }
+func TestVariableExpressionLessThanEqualToUnsatisfiable(t *testing.T) {
+	x := NewVariable("x")
+	solver := NewSolver()
+	solver.AddConstraint(x.LessThanOrEqualToExpression(NewExpression(100)))
+	solver.UpdateVariables()
+	assert.True(t, x.Value <= 100)
+	solver.AddConstraint(x.EqualsFloat(110))
+	solver.UpdateVariables()
+}
 
-//     @Test(expected = UnsatisfiableConstraintException.class)
-//     public void greaterThanEqualToUnsatisfiable() throws DuplicateConstraintException, UnsatisfiableConstraintException {
-//         Variable x = new Variable("x");
-//         Solver solver = new Solver();
-//         solver.addConstraint(Symbolics.greaterThanOrEqualTo(x, 100));
-//         solver.updateVariables();
-//         assertTrue(x.getValue() >= 100);
-//         solver.addConstraint(Symbolics.equals(x, 90));
-//         solver.updateVariables();
-//     }
-// }
+func TestVariableExpressionGreaterThanEqualTo(t *testing.T) {
+	x := NewVariable("x")
+	solver := NewSolver()
+	solver.AddConstraint(x.GreaterThanOrEqualToExpression(NewExpression(100)))
+	solver.UpdateVariables()
+	assert.True(t, x.Value >= 100)
+	solver.AddConstraint(x.EqualsFloat(110))
+	solver.UpdateVariables()
+	assert.InDelta(t, x.Value.Raw(), 110, FloatEpsilon)
+}
+
+func TestVariableExpressionGreaterThanEqualToUnsatisfiable(t *testing.T) {
+	x := NewVariable("x")
+	solver := NewSolver()
+	solver.AddConstraint(x.GreaterThanOrEqualToFloat(100))
+	solver.UpdateVariables()
+	assert.True(t, x.Value >= 100)
+	solver.AddConstraint(x.EqualsFloat(90))
+	solver.UpdateVariables()
+}

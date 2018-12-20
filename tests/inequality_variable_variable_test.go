@@ -1,73 +1,73 @@
 package tests
 
-// class VariableVariableTest {
+import (
+	"testing"
 
-//     private static double EPSILON = 1.0e-8;
+	. "github.com/delaneyj/cassgowary"
+	"github.com/stretchr/testify/assert"
+)
 
-//     @Test
-//     public void lessThanEqualTo() throws DuplicateConstraintException, UnsatisfiableConstraintException {
-//         Solver solver = new Solver();
+func TestVariableVariableLessThanEqualTo(t *testing.T) {
+	solver := NewSolver()
 
-//         Variable x = new Variable("x");
-//         Variable y = new Variable("y");
+	x := NewVariable("x")
+	y := NewVariable("y")
 
-//         solver.addConstraint(Symbolics.equals(y, 100));
-//         solver.addConstraint(Symbolics.lessThanOrEqualTo(x, y));
+	err := solver.AddConstraint(x.EqualsFloat(100))
+	assert.NoError(t, err)
+	err = solver.AddConstraint(x.LessThanOrEqualTo(y))
+	assert.NoError(t, err)
 
-//         solver.updateVariables();
-//         assertTrue(x.getValue() <= 100);
-//         solver.addConstraint(Symbolics.equals(x, 90));
-//         solver.updateVariables();
-//         assertEquals(x.getValue(), 90, EPSILON);
-//     }
+	solver.UpdateVariables()
+	assert.True(t, x.Value <= 100)
+	err = solver.AddConstraint(x.EqualsFloat(90))
+	assert.NoError(t, err)
+	solver.UpdateVariables()
+	assert.InDelta(t, x.Value.Raw(), 90, FloatEpsilon)
+}
 
-//     @Test(expected = UnsatisfiableConstraintException.class)
-//     public void lessThanEqualToUnsatisfiable() throws DuplicateConstraintException, UnsatisfiableConstraintException {
-//         Solver solver = new Solver();
+func TestVariableVariableLessThanEqualToUnsatisfiable(t *testing.T) {
+	solver := NewSolver()
 
-//         Variable x = new Variable("x");
-//         Variable y = new Variable("y");
+	x := NewVariable("x")
+	y := NewVariable("y")
 
-//         solver.addConstraint(Symbolics.equals(y, 100));
-//         solver.addConstraint(Symbolics.lessThanOrEqualTo(x, y));
+	solver.AddConstraint(y.EqualsFloat(100))
+	solver.AddConstraint(x.LessThanOrEqualTo(y))
 
-//         solver.updateVariables();
-//         assertTrue(x.getValue() <= 100);
-//         solver.addConstraint(Symbolics.equals(x, 110));
-//         solver.updateVariables();
-//     }
+	solver.UpdateVariables()
+	assert.True(t, x.Value <= 100)
+	solver.AddConstraint(x.EqualsFloat(110))
+	solver.UpdateVariables()
+}
 
-//     @Test
-//     public void greaterThanEqualTo() throws DuplicateConstraintException, UnsatisfiableConstraintException {
-//         Solver solver = new Solver();
+func TestVariableVariableGreaterThanEqualTo(t *testing.T) {
+	solver := NewSolver()
 
-//         Variable x = new Variable("x");
-//         Variable y = new Variable("y");
+	x := NewVariable("x")
+	y := NewVariable("y")
 
-//         solver.addConstraint(Symbolics.equals(y, 100));
-//         solver.addConstraint(Symbolics.greaterThanOrEqualTo(x, y));
+	solver.AddConstraint(y.EqualsFloat(100))
+	solver.AddConstraint(x.GreaterThanOrEqualTo(y))
 
-//         solver.updateVariables();
-//         assertTrue(x.getValue() >= 100);
-//         solver.addConstraint(Symbolics.equals(x, 110));
-//         solver.updateVariables();
-//         assertEquals(x.getValue(), 110, EPSILON);
-//     }
+	solver.UpdateVariables()
+	assert.True(t, x.Value >= 100)
+	solver.AddConstraint(x.EqualsFloat(110))
+	solver.UpdateVariables()
+	assert.InDelta(t, x.Value.Raw(), 110, FloatEpsilon)
+}
 
-//     @Test(expected = UnsatisfiableConstraintException.class)
-//     public void greaterThanEqualToUnsatisfiable() throws DuplicateConstraintException, UnsatisfiableConstraintException {
+func TestVariableVariableGreaterThanEqualToUnsatisfiable(t *testing.T) {
+	solver := NewSolver()
 
-//         Solver solver = new Solver();
+	x := NewVariable("x")
+	y := NewVariable("y")
 
-//         Variable x = new Variable("x");
-//         Variable y = new Variable("y");
+	solver.AddConstraint(y.EqualsFloat(100))
 
-//         solver.addConstraint(Symbolics.equals(y, 100));
-
-//         solver.addConstraint(Symbolics.greaterThanOrEqualTo(x, y));
-//         solver.updateVariables();
-//         assertTrue(x.getValue() >= 100);
-//         solver.addConstraint(Symbolics.equals(x, 90));
-//         solver.updateVariables();
-//     }
-// }
+	solver.AddConstraint(x.GreaterThanOrEqualTo(y))
+	solver.UpdateVariables()
+	assert.True(t, x.Value >= 100)
+	solver.AddConstraint(x.EqualsFloat(90))
+	solver.UpdateVariables()
+}
