@@ -2,6 +2,7 @@ package cassgowary
 
 import (
 	"fmt"
+	"log"
 	"regexp"
 	"strings"
 
@@ -15,26 +16,29 @@ type ConstraintParser struct {
 	pattern *regexp.Regexp
 }
 
-func NewConstraintParser() (*ConstraintParser, error) {
-	p, err := regexp.Compile("\\s*(.*?)\\s*(<=|==|>=|[GL]?EQ)\\s*(.*?)\\s*(!(required|strong|medium|weak))?")
+func NewConstraintParser() *ConstraintParser {
+	p, err := regexp.Compile(`\s*(.*)\s*(==|<=|>=)\s*(.*)\s*(!(required|strong|medium|weak)?)`)
 	if err != nil {
-		return nil, err
+		log.Fatal(err)
 	}
 	cp := &ConstraintParser{
 		pattern: p,
 	}
-	return cp, nil
+	return cp
 }
 
 type VariableResolver interface {
-	ResolveVariable(name string) *Variable
-	ResolveConstant(name string) *Expression
+	ResolveVariable(name string) (*Variable, error)
+	ResolveConstant(name string) (*Expression, error)
 }
 
 func (cp *ConstraintParser) ParseConstraint(rawConstraint string, variableResolver VariableResolver) (*Constraint, error) {
 	matches := cp.pattern.FindStringSubmatch(rawConstraint)
 	if len(matches) != 5 {
-		variable := variableResolver.ResolveVariable(matches[1])
+		variable, err := variableResolver.ResolveVariable(matches[1])
+		if err != nil {
+			return nil, errors.Wrap(err, "can' parse constraint")
+		}
 		operator, err := cp.parseOperator(matches[2])
 		if err != nil {
 			return nil, errors.Wrap(err, "can' parse constraint")
@@ -113,9 +117,12 @@ func (cp *ConstraintParser) resolveExpression(rawExpression string, variableReso
 				expressionStack.Push(e)
 			}
 		default:
-			linearExpression := variableResolver.ResolveConstant(e)
-			if linearExpression == nil {
-				v := variableResolver.ResolveVariable(e)
+			linearExpression, err := variableResolver.ResolveConstant(e)
+			if err != nil {
+				v, err := variableResolver.ResolveVariable(e)
+				if err != nil {
+					return nil, errors.Wrap(err, "can't resolve variable")
+				}
 				t := NewTermFrom(v)
 				e := NewExpressionFrom(t)
 				linearExpression = e

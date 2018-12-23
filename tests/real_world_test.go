@@ -1,6 +1,17 @@
 package tests
 
-// . "github.com/delaneyj/cassgowary"
+import (
+	"log"
+	"strconv"
+	"strings"
+	"testing"
+	"time"
+
+	"github.com/stretchr/testify/assert"
+
+	. "github.com/delaneyj/cassgowary"
+	"github.com/pkg/errors"
+)
 
 const (
 	LEFT    = "left"
@@ -103,213 +114,144 @@ var constraints = []string{
 	"container.height == more.bottom + container.buttonPadding",
 }
 
-//     public ConstraintParser.CassowaryVariableResolver createVariableResolver(final Solver solver, final HashMap<String, HashMap<String, Variable>> nodeHashMap) {
-//         ConstraintParser.CassowaryVariableResolver variableResolver = new ConstraintParser.CassowaryVariableResolver() {
+type nodeMap map[string]*Variable
+type nodesMap map[string]nodeMap
+type gridVariableResolver struct {
+	solver *Solver
+	nodes  nodesMap
+}
 
-//             private Variable getVariableFromNode(HashMap<String, Variable> node, String variableName) {
+func (vr *gridVariableResolver) getVariableFromNode(node nodeMap, variableName string) *Variable {
+	if v, exists := node[variableName]; exists {
+		return v
+	}
+	v := NewVariable(variableName)
+	node[variableName] = v
 
-//                 try {
-//                     if (node.containsKey(variableName)) {
-//                         return node.get(variableName);
-//                     } else {
-//                         Variable variable = new Variable(variableName);
-//                         node.put(variableName, variable);
-//                         if (RIGHT.equals(variableName)) {
-//                             solver.addConstraint(Symbolics.equals(variable, Symbolics.add(getVariableFromNode(node, LEFT), getVariableFromNode(node, WIDTH))));
-//                         } else if (BOTTOM.equals(variableName)) {
-//                             solver.addConstraint(Symbolics.equals(variable, Symbolics.add(getVariableFromNode(node, TOP), getVariableFromNode(node, HEIGHT))));
-//                         } else if (CENTERX.equals(variableName)) {
-//                            // solver.addConstraint(Symbolics.equals(variable, Symbolics.add(Symbolics.divide(getVariableFromNode(node, WIDTH), 2), getVariableFromNode(node, LEFT)));
-//                         } else if (CENTERY.equals(variableName)) {
-//                            // solver.addConstraint(Symbolics.equals(variable, Symbolics.add(new Expression(Symbolics.divide(getVariableFromNode(node, HEIGHT), 2)), getVariableFromNode(node, TOP));
-//                         }
-//                         return variable;
-//                     }
-//                 } catch(DuplicateConstraintException e) {
-//                     e.printStackTrace();
-//                 } catch (UnsatisfiableConstraintException e) {
-//                     e.printStackTrace();
-//                 }
+	switch variableName {
+	case RIGHT:
+		v2 := vr.getVariableFromNode(node, LEFT)
+		v3 := vr.getVariableFromNode(node, WIDTH)
+		e := v2.Add(v3)
+		c := v.EqualsExpression(e)
+		vr.solver.AddConstraint(c)
+	case BOTTOM:
+		v2 := vr.getVariableFromNode(node, TOP)
+		v3 := vr.getVariableFromNode(node, HEIGHT)
+		e := v2.Add(v3)
+		c := v.EqualsExpression(e)
+		vr.solver.AddConstraint(c)
+	}
+	return v
+}
 
-//                 return null;
+func (vr *gridVariableResolver) getNode(nodeName string) map[string]*Variable {
+	if node, exists := vr.nodes[nodeName]; exists {
+		return node
+	}
 
-//             }
+	node := map[string]*Variable{
+		nodeName: nil,
+	}
+	return node
+}
 
-//             private HashMap<String, Variable> getNode(String nodeName) {
-//                 HashMap<String, Variable> node;
-//                 if (nodeHashMap.containsKey(nodeName)) {
-//                     node = nodeHashMap.get(nodeName);
-//                 } else {
-//                     node = new HashMap<String, Variable>();
-//                     nodeHashMap.put(nodeName, node);
-//                 }
-//                 return node;
-//             }
+func (vr *gridVariableResolver) ResolveVariable(name string) (*Variable, error) {
+	arr := strings.Split(name, ".")
+	if len(arr) == 2 {
+		nodeName, propertyName := arr[0], arr[1]
+		node := vr.getNode(nodeName)
+		return vr.getVariableFromNode(node, propertyName), nil
 
-//             @Override
-//             public Variable resolveVariable(String variableName) {
+	}
+	return nil, errors.New("can't resolve variable")
+}
 
-//                 String[] stringArray = variableName.split("\\.");
-//                 if (stringArray.length == 2) {
-//                     String nodeName = stringArray[0];
-//                     String propertyName = stringArray[1];
+func (vr *gridVariableResolver) ResolveConstant(name string) (*Expression, error) {
 
-//                     HashMap<String, Variable> node = getNode(nodeName);
+	f, err := strconv.ParseFloat(name, 64)
+	if err != nil {
+		return nil, errors.Wrapf(err, "can't parse '%s'", name)
+	}
+	e := NewExpression(Float(f))
+	return e, nil
+}
 
-//                     return getVariableFromNode(node, propertyName);
+func createGridVariableResolver(solver *Solver, nodes nodesMap) VariableResolver {
+	return &gridVariableResolver{solver, nodes}
+}
 
-//                 } else {
-//                     throw new RuntimeException("can't resolve variable");
-//                 }
-//             }
+func TestGridLayout(t *testing.T) {
+	solver := NewSolver()
+	nodes := nodesMap{}
+	variableResolver := createGridVariableResolver(solver, nodes)
 
-//             @Override
-//             public Expression resolveConstant(String name) {
-//                 try {
-//                     return new Expression(Double.parseDouble(name));
-//                 } catch (NumberFormatException e) {
-//                     return null;
-//                 }
-//             }
-//         };
-//         return variableResolver;
-//     }
+	cp := NewConstraintParser()
+	for _, constraint := range constraints {
+		c, err := cp.ParseConstraint(constraint, variableResolver)
+		assert.NoError(t, err)
+		solver.AddConstraint(c)
+	}
 
-//     @Test
-//     public void testGridLayout() throws DuplicateConstraintException, UnsatisfiableConstraintException, NonlinearExpressionException {
+	c, err := cp.ParseConstraint("container.width == 300", variableResolver)
+	assert.NoError(t, err)
+	solver.AddConstraint(c)
+	c, err = cp.ParseConstraint("title0.intrinsicHeight == 100", variableResolver)
+	assert.NoError(t, err)
+	solver.AddConstraint(c)
+	c, err = cp.ParseConstraint("title1.intrinsicHeight == 110", variableResolver)
+	assert.NoError(t, err)
+	solver.AddConstraint(c)
+	c, err = cp.ParseConstraint("title2.intrinsicHeight == 120", variableResolver)
+	assert.NoError(t, err)
+	solver.AddConstraint(c)
+	c, err = cp.ParseConstraint("title3.intrinsicHeight == 130", variableResolver)
+	assert.NoError(t, err)
+	solver.AddConstraint(c)
+	c, err = cp.ParseConstraint("title4.intrinsicHeight == 140", variableResolver)
+	assert.NoError(t, err)
+	solver.AddConstraint(c)
+	c, err = cp.ParseConstraint("title5.intrinsicHeight == 150", variableResolver)
+	assert.NoError(t, err)
+	solver.AddConstraint(c)
+	c, err = cp.ParseConstraint("more.intrinsicHeight == 160", variableResolver)
+	assert.NoError(t, err)
+	solver.AddConstraint(c)
 
-//         final Solver solver = new Solver();
-//         final HashMap<String, HashMap<String, Variable>> nodeHashMap = new HashMap<>();
+	solver.UpdateVariables()
 
-//         ConstraintParser.CassowaryVariableResolver variableResolver = createVariableResolver(solver, nodeHashMap);
+	assert.Equal(t, 20, nodes["thumb0"]["top"].Value.Raw(), FloatEpsilon)
+	assert.Equal(t, 20, nodes["thumb1"]["top"].Value.Raw(), FloatEpsilon)
+	assert.Equal(t, 85, nodes["title0"]["top"].Value.Raw(), FloatEpsilon)
+	assert.Equal(t, 85, nodes["title1"]["top"].Value.Raw(), FloatEpsilon)
+	assert.Equal(t, 210, nodes["thumb2"]["top"].Value.Raw(), FloatEpsilon)
+	assert.Equal(t, 210, nodes["thumb3"]["top"].Value.Raw(), FloatEpsilon)
+	assert.Equal(t, 275, nodes["title2"]["top"].Value.Raw(), FloatEpsilon)
+	assert.Equal(t, 275, nodes["title3"]["top"].Value.Raw(), FloatEpsilon)
+	assert.Equal(t, 420, nodes["thumb4"]["top"].Value.Raw(), FloatEpsilon)
+	assert.Equal(t, 420, nodes["thumb5"]["top"].Value.Raw(), FloatEpsilon)
+	assert.Equal(t, 485, nodes["title4"]["top"].Value.Raw(), FloatEpsilon)
+	assert.Equal(t, 485, nodes["title5"]["top"].Value.Raw(), FloatEpsilon)
+}
 
-//         for (String constraint : CONSTRAINTS) {
-//             Constraint con = ConstraintParser.parseConstraint(constraint, variableResolver);
-//             solver.addConstraint(con);
-//         }
+func TestGridX1000(t *testing.T) {
+	start := time.Now()
+	for i := 0; i < 1000; i++ {
+		TestGridLayout(t)
+	}
+	log.Printf("testGridX1000 took %s.", time.Since(start))
+}
 
-//         solver.addConstraint(ConstraintParser.parseConstraint("container.width == 300", variableResolver));
-//         solver.addConstraint(ConstraintParser.parseConstraint("title0.intrinsicHeight == 100", variableResolver));
-//         solver.addConstraint(ConstraintParser.parseConstraint("title1.intrinsicHeight == 110", variableResolver));
-//         solver.addConstraint(ConstraintParser.parseConstraint("title2.intrinsicHeight == 120", variableResolver));
-//         solver.addConstraint(ConstraintParser.parseConstraint("title3.intrinsicHeight == 130", variableResolver));
-//         solver.addConstraint(ConstraintParser.parseConstraint("title4.intrinsicHeight == 140", variableResolver));
-//         solver.addConstraint(ConstraintParser.parseConstraint("title5.intrinsicHeight == 150", variableResolver));
-//         solver.addConstraint(ConstraintParser.parseConstraint("more.intrinsicHeight == 160", variableResolver));
+func printNodes(variables nodesMap) {
+	for nodeName, nodes := range variables {
+		log.Printf("node: %s", nodeName)
+		printVariables(nodes)
+	}
+}
 
-//         solver.updateVariables();
+func printVariables(nodes nodeMap) {
+	for name, v := range nodes {
 
-//         assertEquals(20, nodeHashMap.get("thumb0").get("top").getValue(), EPSILON);
-//         assertEquals(20, nodeHashMap.get("thumb1").get("top").getValue(), EPSILON);
-
-//         assertEquals(85, nodeHashMap.get("title0").get("top").getValue(), EPSILON);
-//         assertEquals(85, nodeHashMap.get("title1").get("top").getValue(), EPSILON);
-
-//         assertEquals(210, nodeHashMap.get("thumb2").get("top").getValue(), EPSILON);
-//         assertEquals(210, nodeHashMap.get("thumb3").get("top").getValue(), EPSILON);
-
-//         assertEquals(275, nodeHashMap.get("title2").get("top").getValue(), EPSILON);
-//         assertEquals(275, nodeHashMap.get("title3").get("top").getValue(), EPSILON);
-
-//         assertEquals(420, nodeHashMap.get("thumb4").get("top").getValue(), EPSILON);
-//         assertEquals(420, nodeHashMap.get("thumb5").get("top").getValue(), EPSILON);
-
-//         assertEquals(485, nodeHashMap.get("title4").get("top").getValue(), EPSILON);
-//         assertEquals(485, nodeHashMap.get("title5").get("top").getValue(), EPSILON);
-//     }
-
-//   /*  @Test
-//     public void testGridLayoutUsingEditVariables() throws CassowaryError {
-//         final SimplexSolver solver = new SimplexSolver();
-//         solver.setAutosolve(true);
-//         final HashMap<String, HashMap<String, Variable>> nodeHashMap = new HashMap<String, HashMap<String, Variable>>();
-//         ConstraintParser.CassowaryVariableResolver variableResolver = createVariableResolver(solver, nodeHashMap);
-//         for (String constraint : CONSTRAINTS) {
-//             solver.addConstraint(ConstraintParser.parseConstraint(constraint, variableResolver));
-//         }
-//         Variable containerWidth = nodeHashMap.get("container").get("width");
-//         Variable title0IntrinsicHeight = nodeHashMap.get("title0").get("intrinsicHeight");
-//         Variable title1IntrinsicHeight = nodeHashMap.get("title1").get("intrinsicHeight");
-//         Variable title2IntrinsicHeight = nodeHashMap.get("title2").get("intrinsicHeight");
-//         Variable title3IntrinsicHeight = nodeHashMap.get("title3").get("intrinsicHeight");
-//         Variable title4IntrinsicHeight = nodeHashMap.get("title4").get("intrinsicHeight");
-//         Variable title5IntrinsicHeight = nodeHashMap.get("title5").get("intrinsicHeight");
-//         Variable moreIntrinsicHeight = nodeHashMap.get("more").get("intrinsicHeight");
-//         solver.addStay(containerWidth);
-//         solver.addStay(title0IntrinsicHeight);
-//         solver.addStay(title1IntrinsicHeight);
-//         solver.addStay(title2IntrinsicHeight);
-//         solver.addStay(title3IntrinsicHeight);
-//         solver.addStay(title4IntrinsicHeight);
-//         solver.addStay(title5IntrinsicHeight);
-//         solver.addStay(moreIntrinsicHeight);
-//         solver.addEditVar(containerWidth);
-//         solver.addEditVar(title0IntrinsicHeight);
-//         solver.addEditVar(title1IntrinsicHeight);
-//         solver.addEditVar(title2IntrinsicHeight);
-//         solver.addEditVar(title3IntrinsicHeight);
-//         solver.addEditVar(title4IntrinsicHeight);
-//         solver.addEditVar(title5IntrinsicHeight);
-//         solver.addEditVar(moreIntrinsicHeight);
-//         solver.beginEdit();
-//         solver.suggestValue(containerWidth, 300);
-//         solver.suggestValue(title0IntrinsicHeight, 100);
-//         solver.suggestValue(title1IntrinsicHeight, 110);
-//         solver.suggestValue(title2IntrinsicHeight, 120);
-//         solver.suggestValue(title3IntrinsicHeight, 130);
-//         solver.suggestValue(title4IntrinsicHeight, 140);
-//         solver.suggestValue(title5IntrinsicHeight, 150);
-//         solver.suggestValue(moreIntrinsicHeight, 160);
-//         solver.resolve();
-//         solver.solve();
-//         assertEquals(20, nodeHashMap.get("thumb0").get("top").value(), EPSILON);
-//         assertEquals(20, nodeHashMap.get("thumb1").get("top").value(), EPSILON);
-//         assertEquals(85, nodeHashMap.get("title0").get("top").value(), EPSILON);
-//         assertEquals(85, nodeHashMap.get("title1").get("top").value(), EPSILON);
-//         assertEquals(210, nodeHashMap.get("thumb2").get("top").value(), EPSILON);
-//         assertEquals(210, nodeHashMap.get("thumb3").get("top").value(), EPSILON);
-//         assertEquals(275, nodeHashMap.get("title2").get("top").value(), EPSILON);
-//         assertEquals(275, nodeHashMap.get("title3").get("top").value(), EPSILON);
-//         assertEquals(420, nodeHashMap.get("thumb4").get("top").value(), EPSILON);
-//         assertEquals(420, nodeHashMap.get("thumb5").get("top").value(), EPSILON);
-//         assertEquals(485, nodeHashMap.get("title4").get("top").value(), EPSILON);
-//         assertEquals(485, nodeHashMap.get("title5").get("top").value(), EPSILON);
-//     }
-// */
-
-//     @Test
-//     public void testGridX1000() throws DuplicateConstraintException, UnsatisfiableConstraintException, NonlinearExpressionException {
-
-//         long nanoTime = System.nanoTime();
-//         for (int i = 0; i < 1000; i++) {
-//             testGridLayout();
-//         }
-//         System.out.println("testGridX1000 took " + (System.nanoTime() - nanoTime) / 1000000);
-//     }
-
-//     /*
-//     @Test
-//     public void testGridWithEditsX1000() throws CassowaryError {
-//         long nanoTime = System.nanoTime();
-//         for (int i = 0; i < 1000; i++) {
-//             testGridLayoutUsingEditVariables();
-//         }
-//         System.out.println("testGridWithEditsX1000 took " + (System.nanoTime() - nanoTime) / 1000000 + " ms");
-//     }*/
-
-//     private static void printNodes(HashMap<String, HashMap<String, Variable>> variableHashMap) {
-//         Iterator<Map.Entry<String, HashMap<String, Variable>>> it = variableHashMap.entrySet().iterator();
-//         while (it.hasNext()) {
-//             Map.Entry<String, HashMap<String, Variable>> pairs = it.next();
-//             System.out.println("node " + pairs.getKey());
-//             printVariables(pairs.getValue());
-//         }
-//     }
-
-//     private static void printVariables(HashMap<String, Variable> variableHashMap) {
-//         Iterator<Map.Entry<String, Variable>> it = variableHashMap.entrySet().iterator();
-//         while (it.hasNext()) {
-//             Map.Entry<String, Variable> pairs = it.next();
-//             System.out.println(" " + pairs.getKey() + " = " + pairs.getValue().getValue() + " (address:" + pairs.getValue().hashCode() + ")");
-//         }
-//     }
+		log.Printf(" %s = %f (address:%+v)", name, v.Value.Raw(), v)
+	}
+}

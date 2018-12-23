@@ -1,56 +1,68 @@
 package tests
 
 import (
+	"fmt"
+	"log"
+	"strconv"
 	"testing"
-	// . "github.com/delaneyj/cassgowary"
+	"time"
+
+	"github.com/stretchr/testify/assert"
+
+	. "github.com/delaneyj/cassgowary"
 )
 
 func TestBenchmarkTestAddingLotsOfConstraints(t *testing.T) {
-	// solver := NewSolver()
-	//  variables := map[string] *Variable{}
-	// variableResolver := NewConstraintParser() {
-	//              @Override
-	//              public Variable resolveVariable(String variableName) {
-	//                  Variable variable = null;
-	//                  if (variables.containsKey(variableName)) {
-	//                      variable =  variables.get(variableName);
-	//                  } else {
-	//                      variable = new Variable(variableName);
-	//                      variables.put(variableName, variable);
-	//                  }
-	//                  return variable;
-	//              }
-	//             @Override
-	//             public Expression resolveConstant(String name) {
-	//                 try {
-	//                     return new Expression(Double.parseDouble(name));
-	//                 } catch (NumberFormatException e) {
-	//                     return null;
-	//                 }
-	//             }
-	//         };
-	//         solver.addConstraint(ConstraintParser.parseConstraint("variable0 == 100", variableResolver));
-	//         for (int i = 1; i < 3000; i++) {
-	//             String constraintString  = getVariableName(i) + " == 100 + " + getVariableName(i - 1);
-	//             Constraint constraint = ConstraintParser.parseConstraint(constraintString, variableResolver);
-	//             System.gc();
-	//             long timeBefore = System.nanoTime();
-	//             solver.addConstraint(constraint);
-	//             System.out.println(i + "," + ((System.nanoTime() - timeBefore) / 1000) );
-	//         }
-	//     }
-	//     private static String getVariableName(int number) {
-	//         return "getVariable" + number;
-	//     }
-	//     public static void main(String [ ] args) {
-	//         try {
-	//             testAddingLotsOfConstraints();
-	//         } catch (DuplicateConstraintException e) {
-	//             e.printStackTrace();
-	//         } catch (UnsatisfiableConstraintException e) {
-	//             e.printStackTrace();
-	//         } catch (NonlinearExpressionException e) {
-	//             e.printStackTrace();
-	//         }
-	//     }
+	solver := NewSolver()
+	vr := &benchmarkVariableResolver{
+		solver:    solver,
+		variables: nodeMap{},
+	}
+
+	cp := NewConstraintParser()
+	c, err := cp.ParseConstraint("variable0 == 100", vr)
+	assert.NoError(t, err)
+	solver.AddConstraint(c)
+
+	getVariableName := func(number int) string {
+		return fmt.Sprintf("getVariable:%d", number)
+	}
+
+	for i := 1; i < 3000; i++ {
+		constraintString := fmt.Sprintf(
+			"%s == 100 + %s",
+			getVariableName(i),
+			getVariableName(i-1),
+		)
+		constraint, err := cp.ParseConstraint(constraintString, vr)
+		assert.NoError(t, err)
+		start := time.Now()
+		solver.AddConstraint(constraint)
+		log.Printf("%d, %s", i, time.Since(start))
+	}
+}
+
+type benchmarkVariableResolver struct {
+	solver    *Solver
+	variables nodeMap
+}
+
+func (vr *benchmarkVariableResolver) ResolveVariable(variableName string) (*Variable, error) {
+	if v, exists := vr.variables[variableName]; exists {
+		return v, nil
+	}
+
+	v := NewVariable(variableName)
+	vr.variables[variableName] = v
+	return v, nil
+}
+
+func (vr *benchmarkVariableResolver) ResolveConstant(name string) (*Expression, error) {
+	f, err := strconv.ParseFloat(name, 64)
+	if err != nil {
+		return nil, err
+	}
+
+	e := NewExpression(Float(f))
+	return e, nil
 }
