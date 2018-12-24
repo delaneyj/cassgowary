@@ -17,7 +17,7 @@ type ConstraintParser struct {
 }
 
 func NewConstraintParser() *ConstraintParser {
-	p, err := regexp.Compile(`\s*(\S*)\s*(==|<=|>=)\s*([\S^!]*)(?:!(required|strong|medium|weak))?`)
+	p, err := regexp.Compile(`\s*(\S*)\s*(==|<=|>=)\s*([^!]*)(?:!(required|strong|medium|weak))?`)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -141,55 +141,64 @@ func (cp *ConstraintParser) resolveExpression(rawExpression string, variableReso
 }
 
 func (cp *ConstraintParser) infixToPostfix(tokens []string) []string {
+	const OPS = "-+/*^"
 	s := arraystack.New() //int
 
 	postFix := make([]string, 0, len(tokens))
+
 	for _, token := range tokens {
 		c := token[0]
-		op, exists := OperationFromString[string(c)]
-		idx := int(op)
-		if len(token) == 1 || !exists {
+		idx := strings.Index(OPS, token)
+
+		switch {
+		case idx != -1 && len(token) == 1:
 			if s.Empty() {
 				s.Push(idx)
 			} else {
 				for !s.Empty() {
-					i, _ := s.Peek()
-					prec2 := i.(int) / 2
+					pi, _ := s.Peek()
+					prec2 := pi.(int) / 2
 					prec1 := idx / 2
-					if prec2 > prec1 || (prec2 == prec1 && c != '^') {
+					if prec2 > prec1 || (prec2 == prec1 && token != "^") {
 						x, _ := s.Pop()
-						y := x.(string) // Need to debug
-						postFix = append(postFix, y)
+						i := x.(int)
+						op := string(OPS[i])
+						postFix = append(
+							postFix,
+							op,
+						)
 					} else {
 						break
 					}
 				}
 				s.Push(idx)
 			}
-		} else if c == '(' {
+		case c == '(':
 			s.Push(-2)
-		} else if c == ')' {
+		case c == ')':
 			for {
-				if i, _ := s.Peek(); i == -2 {
+				x, _ := s.Peek()
+				i := x.(int)
+				if i == -2 {
 					break
 				}
-
-				y, _ := s.Pop()
-				y2 := y.(string)
-				postFix = append(postFix, y2) // need to debug
+				s.Pop()
+				op := string(OPS[i])
+				postFix = append(postFix, op)
 			}
 			s.Pop()
-		} else {
+		default:
 			postFix = append(postFix, token)
 		}
 	}
-
 	for !s.Empty() {
 		x, _ := s.Pop()
 		i := x.(int)
-		rop := RelationalOperator(i)
-		op := OperationNames[rop]
-		postFix = append(postFix, op)
+		op := string(OPS[i])
+		postFix = append(
+			postFix,
+			op,
+		)
 	}
 	return postFix
 }
@@ -197,23 +206,17 @@ func (cp *ConstraintParser) infixToPostfix(tokens []string) []string {
 func (cp *ConstraintParser) tokenizeExpression(rawExpression string) []string {
 	var sb strings.Builder
 	tokens := []string{}
-	for _, c := range rawExpression {
+
+	for _, c := range []rune(rawExpression) {
 		switch c {
-		case '+':
-		case '-':
-		case '*':
-		case '/':
-		case '(':
-		case ')':
+		case '+', '-', '*', '/', '(', ')':
 			if sb.Len() > 0 {
 				tokens = append(tokens, sb.String())
 				sb.Reset()
 			}
 			tokens = append(tokens, string(c))
-			break
 		case ' ':
 			// ignore space
-			break
 		default:
 			sb.WriteRune(c)
 		}

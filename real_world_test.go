@@ -189,7 +189,14 @@ func TestGridLayout(t *testing.T) {
 	for _, constraint := range constraints {
 		c, err := cp.ParseConstraint(constraint, variableResolver)
 		assert.NoError(t, err)
-		solver.AddConstraint(c)
+		if err != nil {
+			return
+		}
+		err = solver.AddConstraint(c)
+		assert.NoError(t, err)
+		if err != nil {
+			return
+		}
 	}
 
 	c, err := cp.ParseConstraint("container.width == 300", variableResolver)
@@ -223,14 +230,14 @@ func TestGridLayout(t *testing.T) {
 	assert.InDelta(t, 20, nodes["thumb1"]["top"].Value.Raw(), FloatEpsilon)
 	assert.InDelta(t, 85, nodes["title0"]["top"].Value.Raw(), FloatEpsilon)
 	assert.InDelta(t, 85, nodes["title1"]["top"].Value.Raw(), FloatEpsilon)
-	assert.InDelta(t, 210, nodes["thumb2"]["top"].Value.Raw(), FloatEpsilon)
-	assert.InDelta(t, 210, nodes["thumb3"]["top"].Value.Raw(), FloatEpsilon)
-	assert.InDelta(t, 275, nodes["title2"]["top"].Value.Raw(), FloatEpsilon)
-	assert.InDelta(t, 275, nodes["title3"]["top"].Value.Raw(), FloatEpsilon)
-	assert.InDelta(t, 420, nodes["thumb4"]["top"].Value.Raw(), FloatEpsilon)
-	assert.InDelta(t, 420, nodes["thumb5"]["top"].Value.Raw(), FloatEpsilon)
-	assert.InDelta(t, 485, nodes["title4"]["top"].Value.Raw(), FloatEpsilon)
-	assert.InDelta(t, 485, nodes["title5"]["top"].Value.Raw(), FloatEpsilon)
+	assert.InDelta(t, 200, nodes["thumb2"]["top"].Value.Raw(), FloatEpsilon)
+	assert.InDelta(t, 200, nodes["thumb3"]["top"].Value.Raw(), FloatEpsilon)
+	assert.InDelta(t, 265, nodes["title2"]["top"].Value.Raw(), FloatEpsilon)
+	assert.InDelta(t, 265, nodes["title3"]["top"].Value.Raw(), FloatEpsilon)
+	assert.InDelta(t, 400, nodes["thumb4"]["top"].Value.Raw(), FloatEpsilon)
+	assert.InDelta(t, 400, nodes["thumb5"]["top"].Value.Raw(), FloatEpsilon)
+	assert.InDelta(t, 465, nodes["title4"]["top"].Value.Raw(), FloatEpsilon)
+	assert.InDelta(t, 465, nodes["title5"]["top"].Value.Raw(), FloatEpsilon)
 }
 
 // func TestGridX1000(t *testing.T) {

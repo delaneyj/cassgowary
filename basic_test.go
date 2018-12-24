@@ -32,7 +32,8 @@ func TestSimple1(t *testing.T) {
 	x := NewVariable("x")
 	y := NewVariable("y")
 	solver := NewSolver()
-	solver.AddConstraint(x.Equals(y))
+	err := solver.AddConstraint(x.Equals(y))
+	assert.NoError(t, err)
 	solver.UpdateVariables()
 	assert.InDelta(t, x.Value.Raw(), y.Value.Raw(), FloatEpsilon)
 }
@@ -42,10 +43,14 @@ func TestCasso1(t *testing.T) {
 	y := NewVariable("y")
 	solver := NewSolver()
 
-	solver.AddConstraint(x.LessThanOrEqualTo(y))
-	solver.AddConstraint(y.EqualsExpression(x.AddFloat(3.0)))
-	solver.AddConstraint(x.EqualsFloat(10.0).NewModifyStrength(Weak))
-	solver.AddConstraint(y.EqualsFloat(10.0).NewModifyStrength(Weak))
+	err := solver.AddConstraint(x.LessThanOrEqualTo(y))
+	assert.NoError(t, err)
+	err = solver.AddConstraint(y.EqualsExpression(x.AddFloat(3.0)))
+	assert.NoError(t, err)
+	err = solver.AddConstraint(x.EqualsFloat(10.0).NewModifyStrength(Weak))
+	assert.NoError(t, err)
+	err = solver.AddConstraint(y.EqualsFloat(10.0).NewModifyStrength(Weak))
+	assert.NoError(t, err)
 
 	solver.UpdateVariables()
 
@@ -62,7 +67,8 @@ func TestAddDelete1(t *testing.T) {
 	x := NewVariable("x")
 	solver := NewSolver()
 
-	solver.AddConstraint(x.LessThanOrEqualToFloat(100).NewModifyStrength(Weak))
+	err := solver.AddConstraint(x.LessThanOrEqualToFloat(100).NewModifyStrength(Weak))
+	assert.NoError(t, err)
 
 	solver.UpdateVariables()
 	assert.InDelta(t, 100, x.Value.Raw(), FloatEpsilon)
@@ -70,8 +76,10 @@ func TestAddDelete1(t *testing.T) {
 	c10 := x.LessThanOrEqualToFloat(10)
 	c20 := x.LessThanOrEqualToFloat(20)
 
-	solver.AddConstraint(c10)
-	solver.AddConstraint(c20)
+	err = solver.AddConstraint(c10)
+	assert.NoError(t, err)
+	err = solver.AddConstraint(c20)
+	assert.NoError(t, err)
 
 	solver.UpdateVariables()
 
@@ -90,8 +98,10 @@ func TestAddDelete1(t *testing.T) {
 
 	c10again := x.LessThanOrEqualToFloat(10)
 
-	solver.AddConstraint(c10again)
-	solver.AddConstraint(c10)
+	err = solver.AddConstraint(c10again)
+	assert.NoError(t, err)
+	err = solver.AddConstraint(c10)
+	assert.NoError(t, err)
 	solver.UpdateVariables()
 
 	assert.InDelta(t, 10, x.Value.Raw(), FloatEpsilon)
@@ -110,39 +120,47 @@ func TestAddDelete2(t *testing.T) {
 	y := NewVariable("y")
 	solver := NewSolver()
 
-	solver.AddConstraint(x.EqualsFloat(100).NewModifyStrength(Weak))
-	solver.AddConstraint(y.EqualsFloat(120).NewModifyStrength(Strong))
+	err := solver.AddConstraint(x.EqualsFloat(100).NewModifyStrength(Weak))
+	assert.NoError(t, err)
+	err = solver.AddConstraint(y.EqualsFloat(120).NewModifyStrength(Strong))
+	assert.NoError(t, err)
 
 	c10 := x.LessThanOrEqualToFloat(10)
 	c20 := x.LessThanOrEqualToFloat(20)
 
-	solver.AddConstraint(c10)
-	solver.AddConstraint(c20)
+	err = solver.AddConstraint(c10)
+	assert.NoError(t, err)
+	err = solver.AddConstraint(c20)
+	assert.NoError(t, err)
 	solver.UpdateVariables()
 
 	assert.InDelta(t, 10, x.Value.Raw(), FloatEpsilon)
 	assert.InDelta(t, 120, y.Value.Raw(), FloatEpsilon)
 
-	solver.RemoveConstraint(c10)
+	err = solver.RemoveConstraint(c10)
+	assert.NoError(t, err)
 	solver.UpdateVariables()
 
 	assert.InDelta(t, 20, x.Value.Raw(), FloatEpsilon)
 	assert.InDelta(t, 120, y.Value.Raw(), FloatEpsilon)
 
 	cxy := x.Multiply(2).EqualsVariable(y)
-	solver.AddConstraint(cxy)
+	err = solver.AddConstraint(cxy)
+	assert.NoError(t, err)
 	solver.UpdateVariables()
 
 	assert.InDelta(t, 20, x.Value.Raw(), FloatEpsilon)
 	assert.InDelta(t, 40, y.Value.Raw(), FloatEpsilon)
 
-	solver.RemoveConstraint(c20)
+	err = solver.RemoveConstraint(c20)
+	assert.NoError(t, err)
 	solver.UpdateVariables()
 
 	assert.InDelta(t, 60, x.Value.Raw(), FloatEpsilon)
 	assert.InDelta(t, 120, y.Value.Raw(), FloatEpsilon)
 
-	solver.RemoveConstraint(cxy)
+	err = solver.RemoveConstraint(cxy)
+	assert.NoError(t, err)
 	solver.UpdateVariables()
 
 	assert.InDelta(t, 100, x.Value.Raw(), FloatEpsilon)
@@ -153,8 +171,10 @@ func TestInconsistent1(t *testing.T) {
 	x := NewVariable("x")
 	solver := NewSolver()
 
-	solver.AddConstraint(x.EqualsFloat(10))
-	solver.AddConstraint(x.EqualsFloat(5))
+	err := solver.AddConstraint(x.EqualsFloat(10))
+	assert.NoError(t, err)
+	err = solver.AddConstraint(x.EqualsFloat(5))
+	assert.NoError(t, err)
 
 	solver.UpdateVariables()
 }
@@ -163,9 +183,10 @@ func TestInconsistent2(t *testing.T) {
 	x := NewVariable("x")
 	solver := NewSolver()
 
-	solver.AddConstraint(x.GreaterThanOrEqualToFloat(10))
-	solver.AddConstraint(x.LessThanOrEqualToFloat(5))
-	solver.UpdateVariables()
+	err := solver.AddConstraint(x.GreaterThanOrEqualToFloat(10))
+	assert.NoError(t, err)
+	err = solver.AddConstraint(x.LessThanOrEqualToFloat(5))
+	assert.Error(t, err)
 }
 
 func TestInconsistent3(t *testing.T) {
@@ -175,11 +196,16 @@ func TestInconsistent3(t *testing.T) {
 	z := NewVariable("z")
 	solver := NewSolver()
 
-	solver.AddConstraint(w.GreaterThanOrEqualToFloat(10))
-	solver.AddConstraint(x.GreaterThanOrEqualTo(w))
-	solver.AddConstraint(y.GreaterThanOrEqualTo(x))
-	solver.AddConstraint(z.GreaterThanOrEqualTo(y))
-	solver.AddConstraint(z.GreaterThanOrEqualToFloat(8))
-	solver.AddConstraint(z.LessThanOrEqualToFloat(4))
-	solver.UpdateVariables()
+	err := solver.AddConstraint(w.GreaterThanOrEqualToFloat(10))
+	assert.NoError(t, err)
+	err = solver.AddConstraint(x.GreaterThanOrEqualTo(w))
+	assert.NoError(t, err)
+	err = solver.AddConstraint(y.GreaterThanOrEqualTo(x))
+	assert.NoError(t, err)
+	err = solver.AddConstraint(z.GreaterThanOrEqualTo(y))
+	assert.NoError(t, err)
+	err = solver.AddConstraint(z.GreaterThanOrEqualToFloat(8))
+	assert.NoError(t, err)
+	err = solver.AddConstraint(z.LessThanOrEqualToFloat(4))
+	assert.Error(t, err)
 }

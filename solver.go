@@ -11,12 +11,12 @@ type tag struct {
 }
 
 type editInfo struct {
-	tag        tag
+	tag        *tag
 	constraint *Constraint
 	constant   Float
 }
 
-func newEditInfo(c *Constraint, t tag, constant Float) *editInfo {
+func newEditInfo(c *Constraint, t *tag, constant Float) *editInfo {
 	return &editInfo{
 		constraint: c,
 		tag:        t,
@@ -55,7 +55,8 @@ func (s *Solver) AddConstraint(c *Constraint) error {
 		return DuplicateConstraintErr(c)
 	}
 
-	var t tag
+	t := &tag{}
+
 	r, err := s.createRow(c, t)
 	if err != nil {
 		return errors.Wrap(err, "can't create row")
@@ -93,7 +94,7 @@ func (s *Solver) RemoveConstraint(c *Constraint) error {
 		return UnknownConstraintErr(c)
 	}
 
-	tag := t.(tag)
+	tag := t.(*tag)
 	s.cns.Remove(c)
 	s.removeConstraintEffects(c, tag)
 
@@ -128,7 +129,7 @@ func (s *Solver) RemoveConstraint(c *Constraint) error {
 	return nil
 }
 
-func (s *Solver) removeConstraintEffects(c *Constraint, t tag) {
+func (s *Solver) removeConstraintEffects(c *Constraint, t *tag) {
 	if t.marker != nil && t.marker.kind == symbolError {
 		s.removeMarkerEffects(t.marker, c.Strength.Float())
 	} else if t.other != nil && t.other.kind == symbolError {
@@ -210,7 +211,7 @@ func (s *Solver) AddEditVariable(v *Variable, strength Strength) error {
 	}
 
 	t, _ := s.cns.Get(c)
-	tag := t.(tag)
+	tag := t.(*tag)
 	info := newEditInfo(c, tag, 0)
 	s.edits.Put(v, info)
 
@@ -318,7 +319,7 @@ func (s *Solver) UpdateVariables() {
 //
 // The tag will be updated with the marker and error symbols to use
 // for tracking the movement of the constraint in the tableau.
-func (s *Solver) createRow(c *Constraint, tag tag) (*row, error) {
+func (s *Solver) createRow(c *Constraint, tag *tag) (*row, error) {
 	if c == nil {
 		return nil, errors.New("constraint is nil")
 	}
@@ -388,7 +389,7 @@ func (s *Solver) createRow(c *Constraint, tag tag) (*row, error) {
 // 1) The first symbol representing an external variable.
 // 2) A negative slack or error tag variable.
 // If a subject cannot be found, an invalid symbol will be returned.
-func (s *Solver) chooseSubject(r *row, t tag) *symbol {
+func (s *Solver) chooseSubject(r *row, t *tag) *symbol {
 	if fk, _ := r.cells.Find(func(k, v interface{}) bool {
 		return k.(*symbol).kind == symbolExternal
 	}); fk != nil {

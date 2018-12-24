@@ -2,10 +2,8 @@ package cassgowary
 
 import (
 	"fmt"
-	"log"
 	"strconv"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -26,7 +24,7 @@ func TestBenchmarkTestAddingLotsOfConstraints(t *testing.T) {
 		return fmt.Sprintf("getVariable:%d", number)
 	}
 
-	runs := 3000
+	runs := 500
 	for i := 1; i < runs; i++ {
 		constraintString := fmt.Sprintf(
 			"%s == 100 + %s",
@@ -35,9 +33,17 @@ func TestBenchmarkTestAddingLotsOfConstraints(t *testing.T) {
 		)
 		constraint, err := cp.ParseConstraint(constraintString, vr)
 		assert.NoError(t, err)
-		start := time.Now()
-		solver.AddConstraint(constraint)
-		log.Printf("%d, %s", i, time.Since(start))
+
+		if err != nil {
+			return
+		}
+
+		err = solver.AddConstraint(constraint)
+		assert.NoError(t, err)
+
+		if err != nil {
+			return
+		}
 	}
 }
 

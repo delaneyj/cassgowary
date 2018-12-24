@@ -12,7 +12,7 @@ func TestVariableVariableLessThanEqualTo(t *testing.T) {
 	x := NewVariable("x")
 	y := NewVariable("y")
 
-	err := solver.AddConstraint(x.EqualsFloat(100))
+	err := solver.AddConstraint(y.EqualsFloat(100))
 	assert.NoError(t, err)
 	err = solver.AddConstraint(x.LessThanOrEqualTo(y))
 	assert.NoError(t, err)
@@ -21,6 +21,7 @@ func TestVariableVariableLessThanEqualTo(t *testing.T) {
 	assert.True(t, x.Value <= 100)
 	err = solver.AddConstraint(x.EqualsFloat(90))
 	assert.NoError(t, err)
+
 	solver.UpdateVariables()
 	assert.InDelta(t, x.Value.Raw(), 90, FloatEpsilon)
 }
