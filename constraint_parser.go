@@ -17,7 +17,7 @@ type ConstraintParser struct {
 }
 
 func NewConstraintParser() *ConstraintParser {
-	p, err := regexp.Compile(`\s*(.*)\s*(==|<=|>=)\s*(.*)\s*(!(required|strong|medium|weak)?)`)
+	p, err := regexp.Compile(`\s*(\S*)\s*(==|<=|>=)\s*([\S^!]*)(?:!(required|strong|medium|weak))?`)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -34,7 +34,7 @@ type VariableResolver interface {
 
 func (cp *ConstraintParser) ParseConstraint(rawConstraint string, variableResolver VariableResolver) (*Constraint, error) {
 	matches := cp.pattern.FindStringSubmatch(rawConstraint)
-	if len(matches) != 5 {
+	if len(matches) == 5 {
 		variable, err := variableResolver.ResolveVariable(matches[1])
 		if err != nil {
 			return nil, errors.Wrap(err, "can' parse constraint")
@@ -47,6 +47,7 @@ func (cp *ConstraintParser) ParseConstraint(rawConstraint string, variableResolv
 		if err != nil {
 			return nil, errors.Wrap(err, "can' parse constraint")
 		}
+
 		strength := cp.parseStrength(matches[4])
 
 		e2 := variable.SubtractExpression(expression)
@@ -184,8 +185,9 @@ func (cp *ConstraintParser) infixToPostfix(tokens []string) []string {
 	}
 
 	for !s.Empty() {
-		i, _ := s.Pop()
-		rop := i.(RelationalOperator)
+		x, _ := s.Pop()
+		i := x.(int)
+		rop := RelationalOperator(i)
 		op := OperationNames[rop]
 		postFix = append(postFix, op)
 	}

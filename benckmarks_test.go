@@ -1,4 +1,4 @@
-package tests
+package cassgowary
 
 import (
 	"fmt"
@@ -8,8 +8,6 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-
-	. "github.com/delaneyj/cassgowary"
 )
 
 func TestBenchmarkTestAddingLotsOfConstraints(t *testing.T) {
@@ -28,7 +26,8 @@ func TestBenchmarkTestAddingLotsOfConstraints(t *testing.T) {
 		return fmt.Sprintf("getVariable:%d", number)
 	}
 
-	for i := 1; i < 3000; i++ {
+	runs := 3000
+	for i := 1; i < runs; i++ {
 		constraintString := fmt.Sprintf(
 			"%s == 100 + %s",
 			getVariableName(i),

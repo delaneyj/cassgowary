@@ -56,7 +56,10 @@ func (s *Solver) AddConstraint(c *Constraint) error {
 	}
 
 	var t tag
-	r := s.createRow(c, t)
+	r, err := s.createRow(c, t)
+	if err != nil {
+		return errors.Wrap(err, "can't create row")
+	}
 	subject := s.chooseSubject(r, t)
 
 	switch {
@@ -315,7 +318,15 @@ func (s *Solver) UpdateVariables() {
 //
 // The tag will be updated with the marker and error symbols to use
 // for tracking the movement of the constraint in the tableau.
-func (s *Solver) createRow(c *Constraint, tag tag) *row {
+func (s *Solver) createRow(c *Constraint, tag tag) (*row, error) {
+	if c == nil {
+		return nil, errors.New("constraint is nil")
+	}
+
+	if c.expression == nil {
+		return nil, errors.New("constraint doesn't have expression")
+	}
+
 	r := newRowWith(c.expression.Constant)
 	for _, t := range c.expression.Terms {
 		if !t.Coefficient.NearZero() {
@@ -366,7 +377,7 @@ func (s *Solver) createRow(c *Constraint, tag tag) *row {
 		r.reverseSign()
 	}
 
-	return r
+	return r, nil
 }
 
 // Choose the subject for solving for the row

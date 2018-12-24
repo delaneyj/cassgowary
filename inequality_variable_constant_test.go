@@ -1,9 +1,8 @@
-package tests
+package cassgowary
 
 import (
 	"testing"
 
-	. "github.com/delaneyj/cassgowary"
 	"github.com/stretchr/testify/assert"
 )
 

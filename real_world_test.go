@@ -1,15 +1,13 @@
-package tests
+package cassgowary
 
 import (
 	"log"
 	"strconv"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 
-	. "github.com/delaneyj/cassgowary"
 	"github.com/pkg/errors"
 )
 
@@ -153,6 +151,7 @@ func (vr *gridVariableResolver) getNode(nodeName string) map[string]*Variable {
 	node := map[string]*Variable{
 		nodeName: nil,
 	}
+	vr.nodes[nodeName] = node
 	return node
 }
 
@@ -161,8 +160,8 @@ func (vr *gridVariableResolver) ResolveVariable(name string) (*Variable, error) 
 	if len(arr) == 2 {
 		nodeName, propertyName := arr[0], arr[1]
 		node := vr.getNode(nodeName)
-		return vr.getVariableFromNode(node, propertyName), nil
-
+		v := vr.getVariableFromNode(node, propertyName)
+		return v, nil
 	}
 	return nil, errors.New("can't resolve variable")
 }
@@ -220,27 +219,27 @@ func TestGridLayout(t *testing.T) {
 
 	solver.UpdateVariables()
 
-	assert.Equal(t, 20, nodes["thumb0"]["top"].Value.Raw(), FloatEpsilon)
-	assert.Equal(t, 20, nodes["thumb1"]["top"].Value.Raw(), FloatEpsilon)
-	assert.Equal(t, 85, nodes["title0"]["top"].Value.Raw(), FloatEpsilon)
-	assert.Equal(t, 85, nodes["title1"]["top"].Value.Raw(), FloatEpsilon)
-	assert.Equal(t, 210, nodes["thumb2"]["top"].Value.Raw(), FloatEpsilon)
-	assert.Equal(t, 210, nodes["thumb3"]["top"].Value.Raw(), FloatEpsilon)
-	assert.Equal(t, 275, nodes["title2"]["top"].Value.Raw(), FloatEpsilon)
-	assert.Equal(t, 275, nodes["title3"]["top"].Value.Raw(), FloatEpsilon)
-	assert.Equal(t, 420, nodes["thumb4"]["top"].Value.Raw(), FloatEpsilon)
-	assert.Equal(t, 420, nodes["thumb5"]["top"].Value.Raw(), FloatEpsilon)
-	assert.Equal(t, 485, nodes["title4"]["top"].Value.Raw(), FloatEpsilon)
-	assert.Equal(t, 485, nodes["title5"]["top"].Value.Raw(), FloatEpsilon)
+	assert.InDelta(t, 20, nodes["thumb0"]["top"].Value.Raw(), FloatEpsilon)
+	assert.InDelta(t, 20, nodes["thumb1"]["top"].Value.Raw(), FloatEpsilon)
+	assert.InDelta(t, 85, nodes["title0"]["top"].Value.Raw(), FloatEpsilon)
+	assert.InDelta(t, 85, nodes["title1"]["top"].Value.Raw(), FloatEpsilon)
+	assert.InDelta(t, 210, nodes["thumb2"]["top"].Value.Raw(), FloatEpsilon)
+	assert.InDelta(t, 210, nodes["thumb3"]["top"].Value.Raw(), FloatEpsilon)
+	assert.InDelta(t, 275, nodes["title2"]["top"].Value.Raw(), FloatEpsilon)
+	assert.InDelta(t, 275, nodes["title3"]["top"].Value.Raw(), FloatEpsilon)
+	assert.InDelta(t, 420, nodes["thumb4"]["top"].Value.Raw(), FloatEpsilon)
+	assert.InDelta(t, 420, nodes["thumb5"]["top"].Value.Raw(), FloatEpsilon)
+	assert.InDelta(t, 485, nodes["title4"]["top"].Value.Raw(), FloatEpsilon)
+	assert.InDelta(t, 485, nodes["title5"]["top"].Value.Raw(), FloatEpsilon)
 }
 
-func TestGridX1000(t *testing.T) {
-	start := time.Now()
-	for i := 0; i < 1000; i++ {
-		TestGridLayout(t)
-	}
-	log.Printf("testGridX1000 took %s.", time.Since(start))
-}
+// func TestGridX1000(t *testing.T) {
+// 	start := time.Now()
+// 	for i := 0; i < 1000; i++ {
+// 		TestGridLayout(t)
+// 	}
+// 	log.Printf("testGridX1000 took %s.", time.Since(start))
+// }
 
 func printNodes(variables nodesMap) {
 	for nodeName, nodes := range variables {
