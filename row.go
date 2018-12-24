@@ -8,7 +8,7 @@ import (
 )
 
 type row struct {
-	constant Float
+	constant float64
 	cells    *linkedhashmap.Map
 }
 
@@ -30,7 +30,7 @@ func newRow() *row {
 	}
 }
 
-func newRowWith(constant Float) *row {
+func newRowWith(constant float64) *row {
 	r := newRow()
 	r.constant = constant
 	return r
@@ -49,7 +49,7 @@ func newRowFrom(other *row) *row {
 }
 
 //Add a constant value to the row constant.
-func (r *row) add(value Float) Float {
+func (r *row) add(value float64) float64 {
 	r.constant += value
 	return r.constant
 }
@@ -58,14 +58,14 @@ func (r *row) add(value Float) Float {
 // If the symbol already exists in the row, the coefficient will be
 // added to the existing coefficient. If the resulting coefficient
 // is zero, the symbol will be removed from the row
-func (r *row) insertSymbol(s *symbol, coeffecient Float) {
+func (r *row) insertSymbol(s *symbol, coeffecient float64) {
 	coeffecientRaw, exists := r.cells.Get(s)
 	if exists {
-		existingCoefficient := coeffecientRaw.(Float)
+		existingCoefficient := coeffecientRaw.(float64)
 		coeffecient += existingCoefficient
 	}
 
-	if coeffecient.NearZero() {
+	if FloatNearZero(coeffecient) {
 		r.cells.Remove(s)
 		return
 	}
@@ -85,20 +85,20 @@ func (r *row) insertSymbolDefault(s *symbol) {
 //The constant and the cells of the other row will be multiplied by
 //the coefficient and added to this row. Any cell with a resulting
 //coefficient of zero will be removed from the row.
-func (r *row) insertRow(other *row, coefficient Float) {
+func (r *row) insertRow(other *row, coefficient float64) {
 	r.constant += other.constant * coefficient
 
 	other.cells.Each(func(k, v interface{}) {
 		s := k.(*symbol)
-		coeff := v.(Float) * coefficient
+		coeff := v.(float64) * coefficient
 
-		var temp Float
+		var temp float64
 		if x, exists := r.cells.Get(s); exists {
-			temp = x.(Float)
+			temp = x.(float64)
 		}
 		temp += coeff
 		r.cells.Put(s, temp)
-		if temp.NearZero() {
+		if FloatNearZero(temp) {
 			r.cells.Remove(s)
 		}
 	})
@@ -115,7 +115,7 @@ func (r *row) remove(s *symbol) {
 func (r *row) reverseSign() {
 	r.constant *= -1
 	r.cells.Each(func(k, v interface{}) {
-		r.cells.Put(k, -v.(Float))
+		r.cells.Put(k, -v.(float64))
 	})
 }
 
@@ -128,14 +128,14 @@ func (r *row) reverseSign() {
 // The given symbol *must* exist in the row.
 func (r *row) solveFor(s *symbol) {
 	v, _ := r.cells.Get(s)
-	value := v.(Float)
+	value := v.(float64)
 	coeff := -1 / value
 	r.cells.Remove(s)
 	r.constant *= coeff
 
 	newCells := linkedhashmap.New()
 	r.cells.Each(func(k, v interface{}) {
-		value := v.(Float)
+		value := v.(float64)
 		value *= coeff
 		newCells.Put(k, value)
 	})
@@ -157,9 +157,9 @@ func (r *row) solveForSymbols(lhs, rhs *symbol) {
 // Get the coefficient for the given symbol.
 // <p/>
 // If the symbol does not exist in the row, zero will be returned.
-func (r *row) coefficientFor(s *symbol) Float {
+func (r *row) coefficientFor(s *symbol) float64 {
 	if v, exists := r.cells.Get(s); exists {
-		f := v.(Float)
+		f := v.(float64)
 		return f
 	}
 	return 0
@@ -173,7 +173,7 @@ func (r *row) coefficientFor(s *symbol) Float {
 // If the symbol does not exist in the row, this is a no-op.
 func (r *row) substitute(s *symbol, other *row) {
 	if c, exists := r.cells.Get(s); exists {
-		coefficient := c.(Float)
+		coefficient := c.(float64)
 		r.cells.Remove(s)
 		r.insertRow(other, coefficient)
 	}

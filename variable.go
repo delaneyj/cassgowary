@@ -6,7 +6,7 @@ import (
 
 type Variable struct {
 	Name  string
-	Value Float
+	Value float64
 }
 
 func NewVariable(name string) *Variable {
@@ -16,7 +16,7 @@ func NewVariable(name string) *Variable {
 func NewVariableWithValue(name string, value float64) *Variable {
 	return &Variable{
 		Name:  name,
-		Value: Float(value),
+		Value: value,
 	}
 }
 
@@ -25,11 +25,11 @@ func (v *Variable) String() string {
 }
 
 // Variable multiply, divide, and unary invert
-func (v *Variable) Multiply(coefficient Float) *Term {
+func (v *Variable) Multiply(coefficient float64) *Term {
 	return NewTerm(v, coefficient)
 }
 
-func (v *Variable) Divide(denominator Float) *Term {
+func (v *Variable) Divide(denominator float64) *Term {
 	return v.Multiply(1 / denominator)
 }
 
@@ -49,7 +49,7 @@ func (v *Variable) Add(other *Variable) *Expression {
 	return NewTermFrom(v).AddVariable(other)
 }
 
-func (v *Variable) AddFloat(constant Float) *Expression {
+func (v *Variable) AddFloat(constant float64) *Expression {
 	return NewTermFrom(v).AddFloat(constant)
 }
 
@@ -65,7 +65,7 @@ func (v *Variable) Subtract(other *Variable) *Expression {
 	return v.AddTerm(other.Negate())
 }
 
-func (v *Variable) SubtractFloat(constant Float) *Expression {
+func (v *Variable) SubtractFloat(constant float64) *Expression {
 	return v.AddFloat(-constant)
 }
 
@@ -84,7 +84,7 @@ func (v *Variable) Equals(other *Variable) *Constraint {
 	return c
 }
 
-func (v *Variable) EqualsFloat(constant Float) *Constraint {
+func (v *Variable) EqualsFloat(constant float64) *Constraint {
 	t := NewTermFrom(v)
 	c := t.EqualsFloat(constant)
 	return c
@@ -108,7 +108,7 @@ func (v *Variable) LessThanOrEqualTo(other *Variable) *Constraint {
 	return c
 }
 
-func (v *Variable) LessThanOrEqualToFloat(constant Float) *Constraint {
+func (v *Variable) LessThanOrEqualToFloat(constant float64) *Constraint {
 	t := NewTermFrom(v)
 	c := t.LessThanOrEqualToFloat(constant)
 	return c
@@ -130,7 +130,7 @@ func (v *Variable) GreaterThanOrEqualTo(other *Variable) *Constraint {
 	return c
 }
 
-func (v *Variable) GreaterThanOrEqualToFloat(constant Float) *Constraint {
+func (v *Variable) GreaterThanOrEqualToFloat(constant float64) *Constraint {
 	t := NewTermFrom(v)
 	c := t.GreaterThanOrEqualToFloat(constant)
 	return c

@@ -1,80 +1,64 @@
 package cassgowary
 
-import (
-	"math"
-)
+import "math"
 
-const (
-	FloatMin     = Float(-math.MaxFloat64)
-	FloatMax     = Float(math.MaxFloat64)
-	FloatEpsilon = 1.0e-8
-)
+const Epsilon = 1.0e-12
 
-type Float float64
-
-func (f Float) Raw() float64 {
-	return float64(f)
-}
-
-func (f Float) Equals(other Float) bool {
-	if math.Abs((f - other).Raw()) < FloatEpsilon {
+func FloatEquals(f, other float64) bool {
+	if math.Abs(f-other) < Epsilon {
 		return true
 	}
 	return false
 }
 
-func (f Float) Strength() Strength {
-	return Strength(f)
+func FloatNearZero(f float64) bool {
+	return FloatEquals(f, 0)
 }
 
-func (f Float) NearZero() bool {
-	return f.Equals(0)
-}
-
-func (f Float) EqualsExpression(e *Expression) *Constraint {
+func FloatEqualsExpression(f float64, e *Expression) *Constraint {
 	return e.EqualsFloat(f)
 }
 
-func (f Float) EqualsTerm(t Term) *Constraint {
+func FloatEqualsTerm(f float64, t Term) *Constraint {
 	return t.EqualsFloat(f)
 }
 
-func (f Float) EqualsVariable(v *Variable) *Constraint {
+func FloatEqualsVariable(f float64, v *Variable) *Constraint {
 	return v.EqualsFloat(f)
 }
 
-func (f Float) LessThanOrEqualToExpression(e *Expression) *Constraint {
+func FloatLessThanOrEqualToExpression(f float64, e *Expression) *Constraint {
 	ne := NewExpression(f)
 	c := ne.LessThanOrEqualTo(e)
 	return c
 }
 
-func (f Float) LessThanOrEqualToTerm(t *Term) *Constraint {
+func FloatLessThanOrEqualToTerm(f float64, t *Term) *Constraint {
 	e := NewExpressionFrom(t)
-	c := f.LessThanOrEqualToExpression(e)
+	c := FloatLessThanOrEqualToExpression(f, e)
 	return c
 }
 
-func (f Float) LessThanOrEqualToVariable(v *Variable) *Constraint {
+func FloatLessThanOrEqualToVariable(f float64, v *Variable) *Constraint {
 	t := NewTermFrom(v)
-	c := f.LessThanOrEqualToTerm(t)
+	c := FloatLessThanOrEqualToTerm(f, t)
 	return c
 }
 
-func (f Float) GreaterThanOrEqualToTerm(t *Term) *Constraint {
+func FloatGreaterThanOrEqualToTerm(f float64, t *Term) *Constraint {
 	e := NewExpression(f)
 	c := e.GreaterThanOrEqualToTerm(t)
 	return c
 }
 
-func (f Float) GreaterThanOrEqualToVariable(v *Variable) *Constraint {
+func FloatGreaterThanOrEqualToVariable(f float64, v *Variable) *Constraint {
 	t := NewTermFrom(v)
-	c := f.GreaterThanOrEqualToTerm(t)
+	c := FloatGreaterThanOrEqualToTerm(f, t)
 	return c
 }
 
-func (f Float) ModifyStrength(c *Constraint) *Constraint {
-	s := f.Strength()
+func FloatModifyStrength(f float64, c *Constraint) *Constraint {
+	s := Strength(f)
 	c2 := c.NewModifyStrength(s)
 	return c2
 }

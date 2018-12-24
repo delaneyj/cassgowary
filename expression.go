@@ -9,10 +9,10 @@ import (
 
 type Expression struct {
 	Terms    Terms
-	Constant Float
+	Constant float64
 }
 
-func NewExpression(constant Float, terms ...*Term) *Expression {
+func NewExpression(constant float64, terms ...*Term) *Expression {
 	return &Expression{
 		Constant: constant,
 		Terms:    terms,
@@ -36,12 +36,12 @@ func (e *Expression) IsConstant() bool {
 }
 
 func (e *Expression) Reduce() *Expression {
-	vars := linkedhashmap.New() //*Variable,Float
+	vars := linkedhashmap.New() //*Variable,float64
 
 	for _, t := range e.Terms {
 		value := t.Coefficient
 		if tv, exists := vars.Get(t.Variable); exists {
-			value += tv.(Float)
+			value += tv.(float64)
 		}
 		vars.Put(t.Variable, value)
 	}
@@ -49,7 +49,7 @@ func (e *Expression) Reduce() *Expression {
 	reducedTerms := make(Terms, 0, vars.Size())
 	vars.Each(func(k, v interface{}) {
 		variable := k.(*Variable)
-		value := v.(Float)
+		value := v.(float64)
 		t := NewTerm(variable, value)
 		reducedTerms = append(reducedTerms, t)
 	})
@@ -83,7 +83,7 @@ func (e *Expression) String() string {
 }
 
 // Expression multiply, divide, and unary invert
-func (e *Expression) MultiplyFloat(coefficient Float) *Expression {
+func (e *Expression) MultiplyFloat(coefficient float64) *Expression {
 	terms := make(Terms, len(e.Terms))
 	for i, t := range e.Terms {
 		terms[i] = t.Multiply(coefficient)
@@ -102,7 +102,7 @@ func (e *Expression) Multiply(other *Expression) (*Expression, error) {
 	}
 }
 
-func (e *Expression) DivideFloat(denominator Float) *Expression {
+func (e *Expression) DivideFloat(denominator float64) *Expression {
 	return e.MultiplyFloat(1 / denominator)
 }
 
@@ -137,7 +137,7 @@ func (e *Expression) AddVariable(v *Variable) *Expression {
 	return e.AddTerm(NewTermFrom(v))
 }
 
-func (e *Expression) AddFloat(constant Float) *Expression {
+func (e *Expression) AddFloat(constant float64) *Expression {
 	return NewExpression(e.Constant+constant, e.Terms...)
 }
 
@@ -156,7 +156,7 @@ func (e *Expression) SubtractVariable(v *Variable) *Expression {
 	return e.AddTerm(negated)
 }
 
-func (e *Expression) SubtractFloat(constant Float) *Expression {
+func (e *Expression) SubtractFloat(constant float64) *Expression {
 	return e.AddFloat(-constant)
 }
 
@@ -174,7 +174,7 @@ func (e *Expression) EqualsVariable(v *Variable) *Constraint {
 	return e.EqualsTerm(NewTermFrom(v))
 }
 
-func (e *Expression) EqualsFloat(constant Float) *Constraint {
+func (e *Expression) EqualsFloat(constant float64) *Constraint {
 	e2 := NewExpression(constant)
 	c := e.Equals(e2)
 	return c
@@ -193,7 +193,7 @@ func (e *Expression) LessThanOrEqualToVariable(v *Variable) *Constraint {
 	return e.LessThanOrEqualToTerm(NewTermFrom(v))
 }
 
-func (e *Expression) LessThanOrEqualToFloat(constant Float) *Constraint {
+func (e *Expression) LessThanOrEqualToFloat(constant float64) *Constraint {
 	return e.LessThanOrEqualTo(NewExpression(constant))
 }
 
@@ -209,6 +209,6 @@ func (e *Expression) GreaterThanOrEqualToVariable(v *Variable) *Constraint {
 	return e.GreaterThanOrEqualToTerm(NewTermFrom(v))
 }
 
-func (e *Expression) GreaterThanOrEqualToFloat(constant Float) *Constraint {
+func (e *Expression) GreaterThanOrEqualToFloat(constant float64) *Constraint {
 	return e.GreaterThanOrEqualTo(NewExpression(constant))
 }

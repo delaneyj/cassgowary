@@ -172,7 +172,7 @@ func (vr *gridVariableResolver) ResolveConstant(name string) (*Expression, error
 	if err != nil {
 		return nil, errors.Wrapf(err, "can't parse '%s'", name)
 	}
-	e := NewExpression(Float(f))
+	e := NewExpression(f)
 	return e, nil
 }
 
@@ -226,18 +226,18 @@ func TestGridLayout(t *testing.T) {
 
 	solver.UpdateVariables()
 
-	assert.InDelta(t, 20, nodes["thumb0"]["top"].Value.Raw(), FloatEpsilon)
-	assert.InDelta(t, 20, nodes["thumb1"]["top"].Value.Raw(), FloatEpsilon)
-	assert.InDelta(t, 85, nodes["title0"]["top"].Value.Raw(), FloatEpsilon)
-	assert.InDelta(t, 85, nodes["title1"]["top"].Value.Raw(), FloatEpsilon)
-	assert.InDelta(t, 200, nodes["thumb2"]["top"].Value.Raw(), FloatEpsilon)
-	assert.InDelta(t, 200, nodes["thumb3"]["top"].Value.Raw(), FloatEpsilon)
-	assert.InDelta(t, 265, nodes["title2"]["top"].Value.Raw(), FloatEpsilon)
-	assert.InDelta(t, 265, nodes["title3"]["top"].Value.Raw(), FloatEpsilon)
-	assert.InDelta(t, 400, nodes["thumb4"]["top"].Value.Raw(), FloatEpsilon)
-	assert.InDelta(t, 400, nodes["thumb5"]["top"].Value.Raw(), FloatEpsilon)
-	assert.InDelta(t, 465, nodes["title4"]["top"].Value.Raw(), FloatEpsilon)
-	assert.InDelta(t, 465, nodes["title5"]["top"].Value.Raw(), FloatEpsilon)
+	assert.InDelta(t, 20, nodes["thumb0"]["top"].Value, Epsilon)
+	assert.InDelta(t, 20, nodes["thumb1"]["top"].Value, Epsilon)
+	assert.InDelta(t, 85, nodes["title0"]["top"].Value, Epsilon)
+	assert.InDelta(t, 85, nodes["title1"]["top"].Value, Epsilon)
+	assert.InDelta(t, 200, nodes["thumb2"]["top"].Value, Epsilon)
+	assert.InDelta(t, 200, nodes["thumb3"]["top"].Value, Epsilon)
+	assert.InDelta(t, 265, nodes["title2"]["top"].Value, Epsilon)
+	assert.InDelta(t, 265, nodes["title3"]["top"].Value, Epsilon)
+	assert.InDelta(t, 400, nodes["thumb4"]["top"].Value, Epsilon)
+	assert.InDelta(t, 400, nodes["thumb5"]["top"].Value, Epsilon)
+	assert.InDelta(t, 465, nodes["title4"]["top"].Value, Epsilon)
+	assert.InDelta(t, 465, nodes["title5"]["top"].Value, Epsilon)
 }
 
 // func TestGridX1000(t *testing.T) {
@@ -258,6 +258,6 @@ func printNodes(variables nodesMap) {
 func printVariables(nodes nodeMap) {
 	for name, v := range nodes {
 
-		log.Printf(" %s = %f (address:%+v)", name, v.Value.Raw(), v)
+		log.Printf(" %s = %f (address:%+v)", name, v.Value, v)
 	}
 }

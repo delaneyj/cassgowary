@@ -27,7 +27,3 @@ func ClipStrength(value Strength) Strength {
 	r, v := float64(Required), float64(value)
 	return Strength(math.Max(0, math.Min(r, v)))
 }
-
-func (s Strength) Float() Float {
-	return Float(s)
-}

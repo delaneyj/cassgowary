@@ -23,7 +23,7 @@ func TestVariableVariableLessThanEqualTo(t *testing.T) {
 	assert.NoError(t, err)
 
 	solver.UpdateVariables()
-	assert.InDelta(t, x.Value.Raw(), 90, FloatEpsilon)
+	assert.InDelta(t, x.Value, 90, Epsilon)
 }
 
 func TestVariableVariableLessThanEqualToUnsatisfiable(t *testing.T) {
@@ -54,7 +54,7 @@ func TestVariableVariableGreaterThanEqualTo(t *testing.T) {
 	assert.True(t, x.Value >= 100)
 	solver.AddConstraint(x.EqualsFloat(110))
 	solver.UpdateVariables()
-	assert.InDelta(t, x.Value.Raw(), 110, FloatEpsilon)
+	assert.InDelta(t, x.Value, 110, Epsilon)
 }
 
 func TestVariableVariableGreaterThanEqualToUnsatisfiable(t *testing.T) {

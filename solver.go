@@ -1,6 +1,8 @@
 package cassgowary
 
 import (
+	"math"
+
 	"github.com/emirpasic/gods/maps/linkedhashmap"
 
 	"github.com/pkg/errors"
@@ -13,10 +15,10 @@ type tag struct {
 type editInfo struct {
 	tag        *tag
 	constraint *Constraint
-	constant   Float
+	constant   float64
 }
 
-func newEditInfo(c *Constraint, t *tag, constant Float) *editInfo {
+func newEditInfo(c *Constraint, t *tag, constant float64) *editInfo {
 	return &editInfo{
 		constraint: c,
 		tag:        t,
@@ -65,7 +67,7 @@ func (s *Solver) AddConstraint(c *Constraint) error {
 
 	switch {
 	case subject.kind == symbolInvalid && r.allDummies():
-		if r.constant.NearZero() {
+		if FloatNearZero(r.constant) {
 			return UnsatisfiableConstraintErr(c)
 		} else {
 			subject = t.marker
@@ -131,13 +133,13 @@ func (s *Solver) RemoveConstraint(c *Constraint) error {
 
 func (s *Solver) removeConstraintEffects(c *Constraint, t *tag) {
 	if t.marker != nil && t.marker.kind == symbolError {
-		s.removeMarkerEffects(t.marker, c.Strength.Float())
+		s.removeMarkerEffects(t.marker, float64(c.Strength))
 	} else if t.other != nil && t.other.kind == symbolError {
-		s.removeMarkerEffects(t.other, c.Strength.Float())
+		s.removeMarkerEffects(t.other, float64(c.Strength))
 	}
 }
 
-func (s *Solver) removeMarkerEffects(marker *symbol, strength Float) {
+func (s *Solver) removeMarkerEffects(marker *symbol, strength float64) {
 	if r, exists := s.rows.Get(marker); exists {
 		s.objective.insertRow(r.(*row), -strength)
 	} else {
@@ -146,7 +148,7 @@ func (s *Solver) removeMarkerEffects(marker *symbol, strength Float) {
 }
 
 func (s *Solver) markerLeavingRow(marker *symbol) *row {
-	r1, r2 := FloatMax, FloatMax
+	r1, r2 := math.MaxFloat64, math.MaxFloat64
 	var first, second, third *row
 
 	s.rows.Each(func(k, v interface{}) {
@@ -238,7 +240,7 @@ func (s *Solver) HasEditVariable(v *Variable) bool {
 	return exists
 }
 
-func (s *Solver) SuggestValue(v Variable, value Float) error {
+func (s *Solver) SuggestValue(v Variable, value float64) error {
 	e, exists := s.edits.Get(v)
 	edit := e.(*editInfo)
 	if !exists {
@@ -330,7 +332,7 @@ func (s *Solver) createRow(c *Constraint, tag *tag) (*row, error) {
 
 	r := newRowWith(c.expression.Constant)
 	for _, t := range c.expression.Terms {
-		if !t.Coefficient.NearZero() {
+		if !FloatNearZero(t.Coefficient) {
 			symbol := s.varSymbol(t.Variable)
 			if otherRow, exists := s.rows.Get(symbol); exists {
 				r.insertRow(otherRow.(*row), t.Coefficient)
@@ -342,7 +344,7 @@ func (s *Solver) createRow(c *Constraint, tag *tag) (*row, error) {
 
 	switch c.Op {
 	case OP_LE, OP_GE:
-		coeff := Float(-1)
+		coeff := float64(-1)
 		if c.Op == OP_LE {
 			coeff = 1
 		}
@@ -353,7 +355,7 @@ func (s *Solver) createRow(c *Constraint, tag *tag) (*row, error) {
 			serror := newSymbolFrom(symbolError)
 			tag.other = serror
 			r.insertSymbol(serror, -coeff)
-			s.objective.insertSymbol(serror, c.Strength.Float())
+			s.objective.insertSymbol(serror, float64(c.Strength))
 		}
 
 	case OP_EQ:
@@ -364,8 +366,8 @@ func (s *Solver) createRow(c *Constraint, tag *tag) (*row, error) {
 			tag.other = errMinus
 			r.insertSymbol(errPlus, -1) // v = eplus - eminus
 			r.insertSymbol(errMinus, 1) // v - eplus + eminus = 0
-			s.objective.insertSymbol(errPlus, c.Strength.Float())
-			s.objective.insertSymbol(errMinus, c.Strength.Float())
+			s.objective.insertSymbol(errPlus, float64(c.Strength))
+			s.objective.insertSymbol(errMinus, float64(c.Strength))
 		} else {
 			dummy := newSymbolFrom(symbolDummy)
 			tag.marker = dummy
@@ -425,7 +427,7 @@ func (s *Solver) addWithArtificialVariable(r *row) (bool, error) {
 		return false, errors.Wrap(err, "can't optimize")
 	}
 
-	success := s.artificial.constant.NearZero()
+	success := FloatNearZero(s.artificial.constant)
 	s.artificial = nil
 
 	// If the artificial variable is basic, pivot the row so that
@@ -549,7 +551,7 @@ func (s *Solver) dualOptimize() error {
 func (s *Solver) enteringSymbol(objective *row) *symbol {
 	foundSymbolRaw, _ := objective.cells.Find(func(k, v interface{}) bool {
 		symbol := k.(*symbol)
-		value := v.(Float)
+		value := v.(float64)
 
 		if symbol.kind != symbolDummy && value < 0 {
 			return true
@@ -564,11 +566,11 @@ func (s *Solver) enteringSymbol(objective *row) *symbol {
 }
 
 func (s *Solver) dualEnteringSymbol(r *row) *symbol {
-	entering, ratio := newSymbol(), FloatMax
+	entering, ratio := newSymbol(), math.MaxFloat64
 	r.cells.Each(func(k, v interface{}) {
 		if sym := k.(*symbol); sym.kind != symbolDummy {
 			x, _ := r.cells.Get(sym)
-			currentCell := x.(Float)
+			currentCell := x.(float64)
 			if currentCell > 0.0 {
 				coefficient := s.objective.coefficientFor(sym)
 				r := coefficient / currentCell
@@ -602,7 +604,7 @@ func (s *Solver) anyPivotableSymbol(r *row) *symbol {
 // found, the end() iterator will be returned. This indicates that
 // the objective function is unbounded.
 func (s *Solver) leavingRow(entering *symbol) *row {
-	ratio := FloatMax
+	ratio := math.MaxFloat64
 	var r *row
 
 	s.rows.Each(func(k, v interface{}) {

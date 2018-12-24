@@ -68,6 +68,6 @@ func (vr *benchmarkVariableResolver) ResolveConstant(name string) (*Expression, 
 		return nil, err
 	}
 
-	e := NewExpression(Float(f))
+	e := NewExpression(f)
 	return e, nil
 }
